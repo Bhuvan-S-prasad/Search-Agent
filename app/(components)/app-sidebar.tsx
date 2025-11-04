@@ -1,5 +1,6 @@
 "use client"
 
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -10,6 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { SignUpButton } from "@clerk/nextjs";
 import { Compass, GalleryHorizontalEnd, Search } from "lucide-react"
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -55,6 +57,11 @@ export default function AppSidebar() {
                     </SidebarMenuItem>
                 ))}
             </SidebarMenu>
+            <SignUpButton mode="modal">
+               <Button className="rounded-full mx-4 mt-4">Sign Up</Button>
+            </SignUpButton>
+              
+
         </SidebarContent>
         </SidebarGroup>
         <SidebarGroup />
