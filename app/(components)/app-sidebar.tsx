@@ -11,6 +11,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { Compass, GalleryHorizontalEnd, Search } from "lucide-react"
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 const MenuOptions = [
@@ -37,7 +38,7 @@ export default function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="bg-accent flex items-center py-5">
-        <p className="font-semibold text-xl ">Search Agent</p>
+        <Image src={'/logo.png'} alt="logo" width={150} height={100}/>
       </SidebarHeader>
       <SidebarContent className="bg-accent">
         <SidebarGroup>
@@ -56,7 +57,6 @@ export default function AppSidebar() {
             </SidebarMenu>
         </SidebarContent>
         </SidebarGroup>
-
         <SidebarGroup />
       </SidebarContent>
       <SidebarFooter /> 
