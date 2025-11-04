@@ -11,8 +11,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { SignUpButton } from "@clerk/nextjs";
-import { Compass, GalleryHorizontalEnd, Search } from "lucide-react"
+import { SignOutButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
+import { Compass, GalleryHorizontalEnd, LogIn, Search } from "lucide-react"
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 
@@ -31,12 +31,18 @@ const MenuOptions = [
         title: "Library",
         icon: GalleryHorizontalEnd,
         path: "/library"
+    },
+    {
+        title: "Sign In",
+        icon: LogIn,
+        path: "/sign-in"
     }
 ];
 
 
 export default function AppSidebar() {
     const path = usePathname();
+    const { user } = useUser();
   return (
     <Sidebar>
       <SidebarHeader className="bg-accent flex items-center py-5">
@@ -57,16 +63,30 @@ export default function AppSidebar() {
                     </SidebarMenuItem>
                 ))}
             </SidebarMenu>
-            <SignUpButton mode="modal">
+
+            {!user? <SignUpButton mode="modal">
                <Button className="rounded-full mx-4 mt-4">Sign Up</Button>
-            </SignUpButton>
-              
+            </SignUpButton>:
+            <SignOutButton>
+              <Button className="rounded-full mx-4 mt-4">Sign Out</Button>
+            </SignOutButton>
+
+            }
 
         </SidebarContent>
         </SidebarGroup>
         <SidebarGroup />
       </SidebarContent>
-      <SidebarFooter /> 
+
+      <SidebarFooter className="bg-accent">
+        <div className="p-3 flex flex-col">
+          <h2 className="text-gray-500">Try Now</h2>
+          <p className="text-gray-400">upgrade for image upload and more powerful AI</p>
+          <Button variant={'secondary'} className="text-gray-500 mb-3">Learn more</Button>
+          <UserButton />
+        </div>
+        
+      </SidebarFooter>
     </Sidebar>
   )
 }
