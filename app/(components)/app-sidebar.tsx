@@ -46,7 +46,7 @@ export default function AppSidebar() {
             <SidebarMenu>
                 {MenuOptions.map((menu, index)=> (
                     <SidebarMenuItem key={index}>
-                        <SidebarMenuButton asChild className={`p-5 py-6 hover:bg-accent/50 hover:font-bold ${path === menu.path ? "bg-accent/70 font-bold" : ""}`}>
+                        <SidebarMenuButton asChild className={`p-5 py-6 hover:bg-sidebar-ring hover:font-bold ${path === menu.path ? "bg-accent/70 font-bold" : ""}`}>
                             <a href={menu.path} className=''>
                                 <menu.icon className='h-8 w-8'/>
                                 <span className="text-lg">{menu.title}</span>
