@@ -43,6 +43,11 @@ const MenuOptions = [
 export default function AppSidebar() {
     const path = usePathname();
     const { user } = useUser();
+
+    const finalMenuOptions = user
+    ? MenuOptions.filter((menu) => menu.title !== "Sign In")
+    : MenuOptions;
+
   return (
     <Sidebar>
       <SidebarHeader className="bg-accent flex items-center py-5">
@@ -52,7 +57,7 @@ export default function AppSidebar() {
         <SidebarGroup>
         <SidebarContent>
             <SidebarMenu>
-                {MenuOptions.map((menu, index)=> (
+                {finalMenuOptions.map((menu, index)=> (
                     <SidebarMenuItem key={index}>
                         <SidebarMenuButton asChild className={`p-5 py-6 hover:bg-sidebar-ring hover:font-bold ${path === menu.path ? "bg-accent/70 font-bold" : ""}`}>
                             <a href={menu.path} className=''>
