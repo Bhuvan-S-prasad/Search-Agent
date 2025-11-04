@@ -2,6 +2,21 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"; 
 import { Atom, AudioLinesIcon, CpuIcon, GlobeIcon, Mic, Paperclip, SearchCheck } from "lucide-react";
 import Image from "next/image";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { AIModelsOptions } from "@/services/Shared";
 
 
 export default function InputBox() {
@@ -20,13 +35,65 @@ export default function InputBox() {
                         </TabsList>
                     </Tabs>
                 
-                    <div className="flex gap-4 items-center">
-                        <GlobeIcon className="text-primary h-5 w-5"/>
-                        <CpuIcon className="text-primary h-5 w-5"/>
-                        <Paperclip className="text-primary h-5 w-5"/>
-                        <Mic className="text-primary h-5 w-5"/>
+                    <div className="flex gap-0.5 items-center">
+                            
+                        
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost">
+                                    <GlobeIcon className="text-primary h-5 w-5"/>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                <DropdownMenuLabel>Search</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem>Web</DropdownMenuItem>
+                                <DropdownMenuItem>Academics</DropdownMenuItem>
+                                <DropdownMenuItem>Finance</DropdownMenuItem>
+                                <DropdownMenuItem>Social</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost">
+                                    <CpuIcon className="text-primary h-5 w-5"/>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                <DropdownMenuLabel>Models</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                {AIModelsOptions.map((model, index) => (
+                                    <DropdownMenuItem key={index}>
+                                        <div className="mb-1">
+                                            <h2>{model.name}</h2>                                                                              
+                                        </div>
+                                    </DropdownMenuItem>
+                                ))}
+                        </DropdownMenuContent>                
+                        </DropdownMenu>
+
+
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost">
+                                    <Paperclip className="text-primary h-5 w-5"/>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                <DropdownMenuLabel>Attachments</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem>Local Files</DropdownMenuItem>
+                                <DropdownMenuItem>Connect files</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        <Button variant="ghost">
+                            <Mic className="text-primary h-5 w-5"/>
+                        </Button>
+
                         <Button className="text">
-                        <AudioLinesIcon className="text-white h-5 w-5"/>
+                            <AudioLinesIcon className="text-white h-5 w-5"/>
                         </Button>
                     </div>
                  </div>
