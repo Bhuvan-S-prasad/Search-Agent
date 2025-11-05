@@ -4,6 +4,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import AppSidebar from "./(components)/app-sidebar";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
+import Provider  from "./provider"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,7 +35,9 @@ export default function RootLayout({
           <AppSidebar />
           <main className="grow overflow-hidden"  >
             <SidebarTrigger />
-            {children}
+            <Provider>
+              {children}
+            </Provider>
           </main>
         </SidebarProvider>
         </body>

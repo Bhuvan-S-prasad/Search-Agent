@@ -15,12 +15,12 @@ import { AIModelsOptions } from "@/services/Shared";
 
 export default function InputBox() {
     return (
-        <div className="flex flex-col items-center justify-center w-full">
+        <div className="flex flex-col items-center pb-35 w-full">
                 <Image src={'/logo.png'} alt="logo" width={250} height={250}/>
             <div className="p-2 w-full max-w-2xl border rounded-2xl mt-8">
                 <input type="text" placeholder="Search with NOMI" className="w-full p-4 outline-none"/>
 
-                <div className="flex justify-between items-end">
+                <div className="flex justify-between pt-5 items-end">
                 
                     <Tabs defaultValue="Search" className="w-[400px]">
                         <TabsList>
