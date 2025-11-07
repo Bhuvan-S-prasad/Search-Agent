@@ -33,3 +33,4 @@ function Header({ searchInputRecord }: HeaderProps) {
 }
 
 export default Header;
+

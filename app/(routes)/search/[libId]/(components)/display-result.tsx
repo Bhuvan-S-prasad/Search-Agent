@@ -1,11 +1,14 @@
 import AnswerDisplay from "@/app/(components)/answer-display";
+import { SEARCH_RESULT } from "@/services/Shared";
+import axios from "axios";
 import { LucideImage, LucideList, LucideSparkles, LucideVideo } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 
 interface DisplayResultProps {
     searchInputRecord?: {
         searchInput: string;
+        type?: string;
     };
 }
 
@@ -20,6 +23,20 @@ const tabs = [
 function DisplayResult({ searchInputRecord }: DisplayResultProps) {
 
     const [activeTab, setActiveTab] = useState('Answer');
+    const [searchResult, setSearchResult] = useState(SEARCH_RESULT);
+
+    useEffect(() => {
+        // searchInputRecord && GetSearchApiResult();
+    }, [searchInputRecord])
+    
+    const GetSearchApiResult = async() => {
+        const result = await axios.post('/api/google-search-api', {
+            searchInput: searchInputRecord?.searchInput,
+            searchType: searchInputRecord?.type,
+        });
+        console.log(result.data);
+        console.log(JSON.stringify(result.data, null, 2));
+    }
 
 
     return (
@@ -52,9 +69,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
             </div>
 
             <div>
-                {activeTab === 'Answer'? <AnswerDisplay /> : null
-
-                }
+                {activeTab === 'Answer' ? <AnswerDisplay searchResult={SEARCH_RESULT} /> : null}
             </div>
 
         </div>

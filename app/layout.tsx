@@ -30,7 +30,7 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased m-0 p-0`}>
+          className={`${geistSans.variable} ${geistMono.variable} antialiased m-0 p-0`} suppressHydrationWarning>
         <SidebarProvider>
           <AppSidebar />
           <main className="grow overflow-hidden">
