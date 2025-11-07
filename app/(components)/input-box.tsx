@@ -19,7 +19,7 @@ import { useUser } from "@clerk/nextjs";
 import { supabase } from "@/services/supabase";
 import { v4 as uuidv4 } from 'uuid';
 import { Spinner } from "@/components/ui/spinner";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 
 
 export default function InputBox() {
@@ -46,7 +46,7 @@ export default function InputBox() {
         ]).select();
         setLoading(false);
 
-
+        router.push('/search/'+libid)
 
     }
 
