@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"; 
-import { ArrowRight, Atom, AudioLinesIcon, CpuIcon, GlobeIcon, Mic, Paperclip, SearchCheck, Type } from "lucide-react";
+import { ArrowRight, Atom, AudioLinesIcon, CpuIcon, GlobeIcon, Mic, Paperclip, SearchCheck } from "lucide-react";
 import Image from "next/image";
 import {
   DropdownMenu,
@@ -19,14 +19,16 @@ import { useUser } from "@clerk/nextjs";
 import { supabase } from "@/services/supabase";
 import { v4 as uuidv4 } from 'uuid';
 import { Spinner } from "@/components/ui/spinner";
+import { useRouter } from "next/router";
 
 
 export default function InputBox() {
 
-    const  [userSearchInput, setUserSearchInput] = useState();
+    const  [userSearchInput, setUserSearchInput] = useState<string>('');
     const {user} = useUser();
     const[searchType, setSearchType] = useState('Search');
     const [loading, setLoading] = useState(false);
+    const router = useRouter(); 
 
 
     const onSearchQuery = async () => {
@@ -43,6 +45,8 @@ export default function InputBox() {
             }
         ]).select();
         setLoading(false);
+
+
 
     }
 
