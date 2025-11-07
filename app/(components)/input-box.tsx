@@ -48,8 +48,6 @@ export default function InputBox() {
 
         router.push('/search/'+libid)
 
-
-
     }
 
     return (
