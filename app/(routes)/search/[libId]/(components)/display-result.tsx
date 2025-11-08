@@ -1,15 +1,27 @@
 import AnswerDisplay from "@/app/(components)/answer-display";
 import { SEARCH_RESULT } from "@/services/Shared";
 import { supabase } from "@/services/supabase";
+import axios from "axios";
 import { LucideImage, LucideList, LucideSparkles, LucideVideo } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 
 interface DisplayResultProps {
     searchInputRecord?: {
         searchInput: string;
         type?: string;
+    };
+}
+
+interface SearchItem {
+    title?: string;
+    snippet?: string;
+    displayLink?: string;
+    link?: string;
+    pagemap?: {
+        cse_image?: Array<{ src?: string }>;
+        cse_thumbnail?: Array<{ src?: string }>;
     };
 }
 
@@ -24,14 +36,10 @@ const tabs = [
 function DisplayResult({ searchInputRecord }: DisplayResultProps) {
 
     const [activeTab, setActiveTab] = useState('Answer');
-    const [searchResult, setSearchResult] = useState(SEARCH_RESULT);
+    // const [searchResult, setSearchResult] = useState(SEARCH_RESULT);
     const { libId } = useParams();
 
-    useEffect(() => {
-        searchInputRecord && GetSearchApiResult();
-    }, [searchInputRecord])
-    
-    const GetSearchApiResult = async() => {
+    const GetSearchApiResult = useCallback(async() => {
         // const result = await axios.post('/api/google-search-api', {
         //     searchInput: searchInputRecord?.searchInput,
         //     searchType: searchInputRecord?.type,
@@ -39,8 +47,8 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
         // console.log(result.data);
         // console.log(JSON.stringify(result.data, null, 2));
 
-        const searchResp = SEARCH_RESULT    //result.data;
-        const formattedSearchResp = searchResp?.items?.map((item: any) => ({
+        const searchResp = SEARCH_RESULT;    //result.data;
+        const formattedSearchResp = searchResp?.items?.map((item: SearchItem) => ({
             title: item?.title || "",
             description: item?.snippet || "",
             displayLink: item?.displayLink || "",
@@ -55,7 +63,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
         }));
        
         // add data to supabase chats table
-        const { data, error } = await supabase
+        const { data } = await supabase
         .from('chats')
         .insert([
             { 
@@ -63,10 +71,50 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
                 searchResult: formattedSearchResp
              },
         ])
-        .select()
+        .select();
+
+        
+
+        const GenerateAIResp = async ( formattedSearchResp: unknown, recordId: unknown) => {
+            const result = await axios.post('/api/llm-model', {
+                searchInput: searchInputRecord?.searchInput,
+                searchResult: formattedSearchResp,
+                recordId: recordId,
+            });
+
+            
+            const runId = result.data
+            const interval = setInterval(async () => {
+                const runResp = await axios.post('/api/get-inngest-status', {
+                    runId: runId.ids[0],
+                });
+                console.log(runResp.data);
+
+                if(runResp.data.data[0]?.status === 'Completed') {
+                    console.log('complete');
+                    clearInterval(interval);                  
+                    
+                }
+
+            }, 1000)
+        
+            
+            
+        };
+
+        await GenerateAIResp(formattedSearchResp, data?.[0].id);
+        
 
 
-    }
+    }, [searchInputRecord, libId]);
+
+    useEffect(() => {
+        if (searchInputRecord) {
+            GetSearchApiResult();
+        }
+    }, [searchInputRecord, GetSearchApiResult]);
+    
+    
 
 
     return (
@@ -103,7 +151,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
             </div>
 
         </div>
-    )
+    );
 }
 
 export default DisplayResult;

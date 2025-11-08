@@ -1,15 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/services/supabase";
 import { useUser } from "@clerk/nextjs";
 import { UserDetailContext } from "@/context/user-detail-context";
 import { toast } from "sonner";
 
-function Provider({ children }) {
+interface ProviderProps {
+  children: ReactNode;
+}
+
+interface UserDetail {
+  email: string;
+  name: string | null;
+  id?: string;
+  created_at?: string;
+}
+
+function Provider({ children }: ProviderProps) {
   const { user } = useUser();
-  const [userDetail, setUserDetail] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [userDetail, setUserDetail] = useState<UserDetail | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     let isMounted = true;
@@ -23,7 +34,6 @@ function Provider({ children }) {
         return;
       }
 
-
       const email = user?.primaryEmailAddress?.emailAddress;
       if (!email) {
         if (isMounted) {
@@ -34,17 +44,16 @@ function Provider({ children }) {
       }
 
       try {
-       
         const { data: upsertedUser, error: upsertError } = await supabase
           .from("Users")
           .upsert(
             {
               email: email,
-              name: user?.fullName,
+              name: user?.fullName || null,
             },
             {
               onConflict: "email",
-              ignoreDuplicates: false, 
+              ignoreDuplicates: false,
             }
           )
           .select()
@@ -70,7 +79,6 @@ function Provider({ children }) {
 
     createNewUser();
 
-    
     return () => {
       isMounted = false;
     };
