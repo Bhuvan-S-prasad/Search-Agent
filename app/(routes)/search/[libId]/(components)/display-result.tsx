@@ -1,7 +1,8 @@
 import AnswerDisplay from "@/app/(components)/answer-display";
 import { SEARCH_RESULT } from "@/services/Shared";
-import axios from "axios";
+import { supabase } from "@/services/supabase";
 import { LucideImage, LucideList, LucideSparkles, LucideVideo } from "lucide-react";
+import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
 
 
@@ -24,18 +25,47 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
 
     const [activeTab, setActiveTab] = useState('Answer');
     const [searchResult, setSearchResult] = useState(SEARCH_RESULT);
+    const { libId } = useParams();
 
     useEffect(() => {
-        // searchInputRecord && GetSearchApiResult();
+        searchInputRecord && GetSearchApiResult();
     }, [searchInputRecord])
     
     const GetSearchApiResult = async() => {
-        const result = await axios.post('/api/google-search-api', {
-            searchInput: searchInputRecord?.searchInput,
-            searchType: searchInputRecord?.type,
-        });
-        console.log(result.data);
-        console.log(JSON.stringify(result.data, null, 2));
+        // const result = await axios.post('/api/google-search-api', {
+        //     searchInput: searchInputRecord?.searchInput,
+        //     searchType: searchInputRecord?.type,
+        // });
+        // console.log(result.data);
+        // console.log(JSON.stringify(result.data, null, 2));
+
+        const searchResp = SEARCH_RESULT    //result.data;
+        const formattedSearchResp = searchResp?.items?.map((item: any) => ({
+            title: item?.title || "",
+            description: item?.snippet || "",
+            displayLink: item?.displayLink || "",
+            img:
+                item?.pagemap?.cse_image?.[0]?.src ||
+                item?.pagemap?.cse_thumbnail?.[0]?.src ||
+                `https://www.google.com/s2/favicons?domain=${item?.displayLink}&sz=64`,
+            url: item?.link || "",
+            thumbnail:
+                item?.pagemap?.cse_thumbnail?.[0]?.src ||
+                `https://www.google.com/s2/favicons?domain=${item?.displayLink}&sz=64`,
+        }));
+       
+        // add data to supabase chats table
+        const { data, error } = await supabase
+        .from('chats')
+        .insert([
+            { 
+                libId: libId,
+                searchResult: formattedSearchResp
+             },
+        ])
+        .select()
+
+
     }
 
 
