@@ -13,8 +13,10 @@ interface DisplaySummaryProps {
 function DisplaySummary({ aiResponce }: DisplaySummaryProps) {
   if (!aiResponce) {
     return (
-      <div className="p-4 text-sm text-gray-500 italic">
-        No summary available yet.
+      <div>
+        <div>
+         no summary
+        </div>
       </div>
     );
   }
