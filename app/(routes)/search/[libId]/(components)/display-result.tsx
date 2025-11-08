@@ -1,6 +1,7 @@
 import AnswerDisplay from "@/app/(components)/answer-display";
 import { SEARCH_RESULT } from "@/services/Shared";
 import { supabase } from "@/services/supabase";
+import axios from "axios";
 import { LucideImage, LucideList, LucideSparkles, LucideVideo } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -24,7 +25,7 @@ const tabs = [
 function DisplayResult({ searchInputRecord }: DisplayResultProps) {
 
     const [activeTab, setActiveTab] = useState('Answer');
-    const [searchResult, setSearchResult] = useState(SEARCH_RESULT);
+    // const [searchResult, setSearchResult] = useState(SEARCH_RESULT);
     const { libId } = useParams();
 
     useEffect(() => {
@@ -64,6 +65,19 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
              },
         ])
         .select()
+
+        
+
+        const GenerateAIResp = async ( formattedSearchResp: unknown, recordId: unknown) => {
+            const result = await axios.post('/api/llm-model', {
+                searchInput: searchInputRecord?.searchInput,
+                searchResult: formattedSearchResp,
+                recordId: recordId,
+            });
+            console.log(result.data);
+        }
+
+        await GenerateAIResp(formattedSearchResp, data?.[0].id)
 
 
     }
