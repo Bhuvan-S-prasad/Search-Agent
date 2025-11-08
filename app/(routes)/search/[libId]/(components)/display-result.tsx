@@ -81,10 +81,29 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
                 searchResult: formattedSearchResp,
                 recordId: recordId,
             });
-            console.log(result.data);
+
+            
+            const runId = result.data
+            const interval = setInterval(async () => {
+                const runResp = await axios.post('/api/get-inngest-status', {
+                    runId: runId.ids[0],
+                });
+                console.log(runResp.data);
+
+                if(runResp.data.data[0]?.status === 'Completed') {
+                    console.log('complete');
+                    clearInterval(interval);                  
+                    
+                }
+
+            }, 1000)
+        
+            
+            
         };
 
         await GenerateAIResp(formattedSearchResp, data?.[0].id);
+        
 
 
     }, [searchInputRecord, libId]);
