@@ -1,5 +1,6 @@
 import AnswerDisplay from "@/app/(components)/answer-display";
-import { SEARCH_RESULT } from "@/services/Shared";
+import ImageDisplay from "@/app/(components)/images-display";
+import SourceListTab from "@/app/(components)/source-list-tab";
 import { supabase } from "@/services/supabase";
 import axios from "axios";
 import { LucideImage, LucideList, LucideSparkles, LucideVideo } from "lucide-react";
@@ -11,7 +12,7 @@ interface Chat {
     libId: string;
     searchResult: FormattedSearchItem[];
     userSearchInput: string;
-    aiResponse?: string;
+    aiResponce?: string;
 }
 
 interface DisplayResultProps {
@@ -45,19 +46,17 @@ interface FormattedSearchItem {
 interface Tab {
     label: string;
     icon: React.ComponentType<{ className?: string }>;
-    badge?: number;
 }
 
 const tabs: Tab[] = [
     { label: 'Answer', icon: LucideSparkles },
     { label: 'Images', icon: LucideImage },
     { label: 'Videos', icon: LucideVideo },
-    { label: 'Sources', icon: LucideList, badge: 10 }
+    { label: 'Sources', icon: LucideList }
 ];
 
 function DisplayResult({ searchInputRecord }: DisplayResultProps) {
     const [activeTab, setActiveTab] = useState('Answer');
-    const [searchResult, setSearchResult] = useState<typeof searchInputRecord>(searchInputRecord);
     const params = useParams();
     const libId = params?.libId as string;
 
@@ -65,13 +64,13 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
         if (!searchInputRecord?.searchInput) return;
 
         try {
-            // const result = await axios.post('/api/google-search-api', {
-            //     searchInput: searchInputRecord?.searchInput,
-            //     searchType: searchInputRecord?.type,
-            // });
-            // const searchResp = result.data;
+            const result = await axios.post('/api/google-search-api', {
+                searchInput: searchInputRecord?.searchInput,
+                searchType: searchInputRecord?.type,
+            });
 
-            const searchResp = SEARCH_RESULT;
+            const searchResp = result.data;
+
             const formattedSearchResp: FormattedSearchItem[] = searchResp?.items?.map((item: SearchItem) => ({
                 title: item?.title || "",
                 description: item?.snippet || "",
@@ -144,18 +143,17 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
         if (searchInputRecord?.chats?.length === 0) {
             GetSearchApiResult();
         }
-        setSearchResult(searchInputRecord);
     }, [searchInputRecord, GetSearchApiResult]);
 
     return (
         <div className="mt-5">
-            {searchResult?.chats?.map((chat, index) => (
+            {searchInputRecord?.chats?.map((chat, index) => (
                 <div key={chat.id || index} className="mt-7">
                     <h2 className="font-bold text-3xl line-clamp-2">
                         {searchInputRecord?.searchInput}
                     </h2>
                     <div className="flex items-center space-x-6 border-b pt-4 pb-2">
-                        {tabs.map(({ label, icon: Icon, badge }) => (
+                        {tabs.map(({ label, icon: Icon }) => (
                             <button
                                 key={label}
                                 onClick={() => setActiveTab(label)}
@@ -167,11 +165,6 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
                             >
                                 <Icon className="w-5 h-5" />
                                 <span>{label}</span>
-                                {badge && (
-                                    <span className="ml-1 text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
-                                        {badge}
-                                    </span>
-                                )}
                                 {activeTab === label && (
                                     <span className="absolute -bottom-2 left-0 w-full h-0.5 bg-black rounded"></span>
                                 )}
@@ -185,6 +178,13 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
                     <div>
                         {activeTab === 'Answer' && (
                             <AnswerDisplay chat={chat} />
+                            
+                        )}
+                        {activeTab === 'Images' && (
+                            <ImageDisplay chat={chat}/> 
+                        )}
+                        {activeTab === 'Sources' && (
+                            <SourceListTab chat={chat}/>
                         )}
                     </div>
                     <hr className="my-5" />

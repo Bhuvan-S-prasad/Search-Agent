@@ -7,11 +7,11 @@ import { cn } from "@/lib/utils";
 import { Image } from "lucide-react";
 
 interface DisplaySummaryProps {
-  aiResponse?: string;
+  aiResponce?: string;
 }
 
-function DisplaySummary({ aiResponse }: DisplaySummaryProps) {
-  if (!aiResponse) {
+function DisplaySummary({ aiResponce }: DisplaySummaryProps) {
+  if (!aiResponce) {
     return (
       <div className="p-4 text-sm text-gray-500 italic">
         No summary available yet.
@@ -118,7 +118,7 @@ function DisplaySummary({ aiResponse }: DisplaySummaryProps) {
           ),
         }}
       >
-        {aiResponse}
+        {aiResponce}
       </ReactMarkdown>
     </div>
   );

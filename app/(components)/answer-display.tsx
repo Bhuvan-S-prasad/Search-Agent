@@ -1,13 +1,6 @@
 import DisplaySummary from "./display-summary";
 import SourceList from "./source-list";
 
-interface SearchItem {
-  displayLink?: string;
-  link: string;
-  title: string;
-  snippet: string;
-}
-
 interface FormattedSearchItem {
     title: string;
     description: string;
@@ -25,11 +18,6 @@ interface Chat {
     userSearchInput: string;
     aiResponce?: string;
 }
-
-interface SearchResult {
-  items?: SearchItem[];
-}
-
 interface AnswerDisplayProps {
 
   chat?: Chat;
@@ -44,7 +32,7 @@ function AnswerDisplay({ chat }: AnswerDisplayProps) {
     <div>
       <div className="flex gap-2 flex-wrap mt-5">
         <SourceList webResults={chat?.searchResult}/>
-        <DisplaySummary aiResponse={chat?.aiResponce}/>
+        <DisplaySummary aiResponce={chat?.aiResponce}/>
       </div>
     </div>
   );
