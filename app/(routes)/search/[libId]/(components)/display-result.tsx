@@ -4,13 +4,24 @@ import { supabase } from "@/services/supabase";
 import axios from "axios";
 import { LucideImage, LucideList, LucideSparkles, LucideVideo } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 
 interface DisplayResultProps {
     searchInputRecord?: {
         searchInput: string;
         type?: string;
+    };
+}
+
+interface SearchItem {
+    title?: string;
+    snippet?: string;
+    displayLink?: string;
+    link?: string;
+    pagemap?: {
+        cse_image?: Array<{ src?: string }>;
+        cse_thumbnail?: Array<{ src?: string }>;
     };
 }
 
@@ -28,11 +39,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
     // const [searchResult, setSearchResult] = useState(SEARCH_RESULT);
     const { libId } = useParams();
 
-    useEffect(() => {
-        searchInputRecord && GetSearchApiResult();
-    }, [searchInputRecord])
-    
-    const GetSearchApiResult = async() => {
+    const GetSearchApiResult = useCallback(async() => {
         // const result = await axios.post('/api/google-search-api', {
         //     searchInput: searchInputRecord?.searchInput,
         //     searchType: searchInputRecord?.type,
@@ -40,8 +47,8 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
         // console.log(result.data);
         // console.log(JSON.stringify(result.data, null, 2));
 
-        const searchResp = SEARCH_RESULT    //result.data;
-        const formattedSearchResp = searchResp?.items?.map((item: any) => ({
+        const searchResp = SEARCH_RESULT;    //result.data;
+        const formattedSearchResp = searchResp?.items?.map((item: SearchItem) => ({
             title: item?.title || "",
             description: item?.snippet || "",
             displayLink: item?.displayLink || "",
@@ -56,7 +63,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
         }));
        
         // add data to supabase chats table
-        const { data, error } = await supabase
+        const { data } = await supabase
         .from('chats')
         .insert([
             { 
@@ -64,7 +71,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
                 searchResult: formattedSearchResp
              },
         ])
-        .select()
+        .select();
 
         
 
@@ -75,12 +82,20 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
                 recordId: recordId,
             });
             console.log(result.data);
+        };
+
+        await GenerateAIResp(formattedSearchResp, data?.[0].id);
+
+
+    }, [searchInputRecord, libId]);
+
+    useEffect(() => {
+        if (searchInputRecord) {
+            GetSearchApiResult();
         }
-
-        await GenerateAIResp(formattedSearchResp, data?.[0].id)
-
-
-    }
+    }, [searchInputRecord, GetSearchApiResult]);
+    
+    
 
 
     return (
@@ -117,7 +132,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
             </div>
 
         </div>
-    )
+    );
 }
 
 export default DisplayResult;
