@@ -19,10 +19,13 @@ function SearchQueryResult() {
         const GetSearchQueryRecord = async () => {
             const { data: Library, error } = await supabase
             .from('Library')
-            .select('*')
+            .select('*,chats(*)')
             .eq('libId', libId);
+
+            
     
             if (Library && Library.length > 0) {
+                console.log(Library[0])
                 setSearchInputRecord(Library[0]);
             }
         }

@@ -31,7 +31,7 @@ ${JSON.stringify(event.data.searchResult, null, 2)}
     const aiResp = await step.run("generate-ai-llm-call", async () => {
       const response = await fetch(
         "https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=" +
-          process.env.NEXT_PUBLIC_GEMINI_API_KEY,
+          process.env.GEMINI_API_KEY,
         {
           method: "POST",
           headers: {
