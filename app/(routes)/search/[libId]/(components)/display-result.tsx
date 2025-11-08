@@ -6,11 +6,19 @@ import { LucideImage, LucideList, LucideSparkles, LucideVideo } from "lucide-rea
 import { useParams } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 
+interface Chat {
+    id: number;
+    libId: string;
+    searchResult: FormattedSearchItem[];
+    userSearchInput: string;
+    aiResponse?: string;
+}
 
 interface DisplayResultProps {
     searchInputRecord?: {
         searchInput: string;
         type?: string;
+        chats?: Chat[];
     };
 }
 
@@ -25,131 +33,163 @@ interface SearchItem {
     };
 }
 
-const tabs = [
-    {label: 'Answer', icon: LucideSparkles},
-    {label: 'Images', icon: LucideImage},
-    {label: 'Videos', icon: LucideVideo},
-    {label: 'Sources', icon: LucideList, badge: 10}
+interface FormattedSearchItem {
+    title: string;
+    description: string;
+    displayLink: string;
+    img: string;
+    url: string;
+    thumbnail: string;
+}
+
+interface Tab {
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    badge?: number;
+}
+
+const tabs: Tab[] = [
+    { label: 'Answer', icon: LucideSparkles },
+    { label: 'Images', icon: LucideImage },
+    { label: 'Videos', icon: LucideVideo },
+    { label: 'Sources', icon: LucideList, badge: 10 }
 ];
 
-
 function DisplayResult({ searchInputRecord }: DisplayResultProps) {
-
     const [activeTab, setActiveTab] = useState('Answer');
-    // const [searchResult, setSearchResult] = useState(SEARCH_RESULT);
-    const { libId } = useParams();
+    const [searchResult, setSearchResult] = useState<typeof searchInputRecord>(searchInputRecord);
+    const params = useParams();
+    const libId = params?.libId as string;
 
-    const GetSearchApiResult = useCallback(async() => {
-        // const result = await axios.post('/api/google-search-api', {
-        //     searchInput: searchInputRecord?.searchInput,
-        //     searchType: searchInputRecord?.type,
-        // });
-        // console.log(result.data);
-        // console.log(JSON.stringify(result.data, null, 2));
+    const GetSearchApiResult = useCallback(async () => {
+        if (!searchInputRecord?.searchInput) return;
 
-        const searchResp = SEARCH_RESULT;    //result.data;
-        const formattedSearchResp = searchResp?.items?.map((item: SearchItem) => ({
-            title: item?.title || "",
-            description: item?.snippet || "",
-            displayLink: item?.displayLink || "",
-            img:
-                item?.pagemap?.cse_image?.[0]?.src ||
-                item?.pagemap?.cse_thumbnail?.[0]?.src ||
-                `https://www.google.com/s2/favicons?domain=${item?.displayLink}&sz=64`,
-            url: item?.link || "",
-            thumbnail:
-                item?.pagemap?.cse_thumbnail?.[0]?.src ||
-                `https://www.google.com/s2/favicons?domain=${item?.displayLink}&sz=64`,
-        }));
-       
-        // add data to supabase chats table
-        const { data } = await supabase
-        .from('chats')
-        .insert([
-            { 
-                libId: libId,
-                searchResult: formattedSearchResp
-             },
-        ])
-        .select();
+        try {
+            // const result = await axios.post('/api/google-search-api', {
+            //     searchInput: searchInputRecord?.searchInput,
+            //     searchType: searchInputRecord?.type,
+            // });
+            // const searchResp = result.data;
 
-        
+            const searchResp = SEARCH_RESULT;
+            const formattedSearchResp: FormattedSearchItem[] = searchResp?.items?.map((item: SearchItem) => ({
+                title: item?.title || "",
+                description: item?.snippet || "",
+                displayLink: item?.displayLink || "",
+                img:
+                    item?.pagemap?.cse_image?.[0]?.src ||
+                    item?.pagemap?.cse_thumbnail?.[0]?.src ||
+                    `https://www.google.com/s2/favicons?domain=${item?.displayLink}&sz=64`,
+                url: item?.link || "",
+                thumbnail:
+                    item?.pagemap?.cse_thumbnail?.[0]?.src ||
+                    `https://www.google.com/s2/favicons?domain=${item?.displayLink}&sz=64`,
+            })) || [];
 
-        const GenerateAIResp = async ( formattedSearchResp: unknown, recordId: unknown) => {
-            const result = await axios.post('/api/llm-model', {
-                searchInput: searchInputRecord?.searchInput,
-                searchResult: formattedSearchResp,
-                recordId: recordId,
-            });
+            // Add data to supabase chats table
+            const { data, error } = await supabase
+                .from('chats')
+                .insert([
+                    {
+                        libId: libId,
+                        searchResult: formattedSearchResp,
+                        userSearchInput: searchInputRecord?.searchInput
+                    },
+                ])
+                .select();
 
-            
-            const runId = result.data
-            const interval = setInterval(async () => {
-                const runResp = await axios.post('/api/get-inngest-status', {
-                    runId: runId.ids[0],
+            if (error) {
+                console.error('Error inserting chat:', error);
+                return;
+            }
+
+            const GenerateAIResp = async (
+                formattedSearchResp: FormattedSearchItem[],
+                recordId: number
+            ) => {
+                const result = await axios.post('/api/llm-model', {
+                    searchInput: searchInputRecord?.searchInput,
+                    searchResult: formattedSearchResp,
+                    recordId: recordId,
                 });
-                console.log(runResp.data);
 
-                if(runResp.data.data[0]?.status === 'Completed') {
-                    console.log('complete');
-                    clearInterval(interval);                  
-                    
-                }
+                const runId = result.data;
+                const interval = setInterval(async () => {
+                    try {
+                        const runResp = await axios.post('/api/get-inngest-status', {
+                            runId: runId.ids[0],
+                        });
+                        console.log(runResp.data);
 
-            }, 1000)
-        
-            
-            
-        };
+                        if (runResp.data.data[0]?.status === 'Completed') {
+                            console.log('complete');
+                            clearInterval(interval);
+                        }
+                    } catch (error) {
+                        console.error('Error checking status:', error);
+                        clearInterval(interval);
+                    }
+                }, 1000);
+            };
 
-        await GenerateAIResp(formattedSearchResp, data?.[0].id);
-        
-
-
+            if (data && data[0]?.id) {
+                await GenerateAIResp(formattedSearchResp, data[0].id);
+            }
+        } catch (error) {
+            console.error('Error in GetSearchApiResult:', error);
+        }
     }, [searchInputRecord, libId]);
 
     useEffect(() => {
-        if (searchInputRecord) {
+        if (searchInputRecord?.chats?.length === 0) {
             GetSearchApiResult();
         }
+        setSearchResult(searchInputRecord);
     }, [searchInputRecord, GetSearchApiResult]);
-    
-    
-
 
     return (
         <div className="mt-5">
-            <h2 className="font-medium text-3xl line-clamp-2">{searchInputRecord?.searchInput}</h2>
-            <div className="flex items-center space-x-6 border-b pt-4 pb-2">
-                {tabs.map(({ label, icon: Icon, badge }) => (
-                    <button
-                        key={label}
-                        onClick={() => setActiveTab(label)}
-                        className={`flex items-center gap-1 relative text-sm font-medium ${activeTab === label ? 'text-black font-semibold' : 'text-gray-500'}`}>
+            {searchResult?.chats?.map((chat, index) => (
+                <div key={chat.id || index} className="mt-7">
+                    <h2 className="font-bold text-3xl line-clamp-2">
+                        {searchInputRecord?.searchInput}
+                    </h2>
+                    <div className="flex items-center space-x-6 border-b pt-4 pb-2">
+                        {tabs.map(({ label, icon: Icon, badge }) => (
+                            <button
+                                key={label}
+                                onClick={() => setActiveTab(label)}
+                                className={`flex items-center gap-1 relative text-sm font-medium ${
+                                    activeTab === label
+                                        ? 'text-black font-semibold'
+                                        : 'text-gray-500'
+                                }`}
+                            >
+                                <Icon className="w-5 h-5" />
+                                <span>{label}</span>
+                                {badge && (
+                                    <span className="ml-1 text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
+                                        {badge}
+                                    </span>
+                                )}
+                                {activeTab === label && (
+                                    <span className="absolute -bottom-2 left-0 w-full h-0.5 bg-black rounded"></span>
+                                )}
+                            </button>
+                        ))}
+                        <div className="ml-auto text-sm text-gray-500">
+                            1 task <span className="ml-1"> -- </span>
+                        </div>
+                    </div>
 
-                        <Icon className="w-5 h-5" />
-                        <span>{label}</span>
-                        {badge && (
-                            <span className="ml-1 text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
-                                {badge}
-                            </span>
-
+                    <div>
+                        {activeTab === 'Answer' && (
+                            <AnswerDisplay chat={chat} />
                         )}
-                        {activeTab === label && (
-                            <span className="absolute -bottom-2 left-0 w-full h-0.5 bg-black rounded">
-                            </span>
-                        )}
-                    </button>
-                ))}
-                <div className="ml-auto text-sm text-gray-500">
-                    1 task <span className="ml-1"> -- </span>
+                    </div>
+                    <hr className="my-5" />
                 </div>
-            </div>
-
-            <div>
-                {activeTab === 'Answer' ? <AnswerDisplay searchResult={SEARCH_RESULT} /> : null}
-            </div>
-
+            ))}
         </div>
     );
 }
