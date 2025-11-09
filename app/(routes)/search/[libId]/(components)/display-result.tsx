@@ -255,7 +255,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
   }, []);
 
   return (
-    <div className="mt-5">
+    <div className="mt-5 md:pl-10 md:pr-15 lg:pl-25 lg:pr-25">
       {searchResult?.chats?.map((chat, index) => (
         <div key={chat.id || index} className="mt-7">
           <h2 className="font-bold text-3xl line-clamp-2">
