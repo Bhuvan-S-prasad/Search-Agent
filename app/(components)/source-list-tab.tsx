@@ -44,8 +44,7 @@ function SourceListTab({ chat }: AnswerDisplayProps) {
             onClick={() => window.open(item.url, "_blank")}
             className="flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-zinc-800 transition cursor-pointer border border-gray-100 dark:border-zinc-700"
           >
-            {/* Favicon */}
-            <div className="flex-shrink-0 mt-1">
+            <div className="shrink-0 mt-1">
               <Image
                 src={faviconUrl}
                 alt={domain}
@@ -55,7 +54,6 @@ function SourceListTab({ chat }: AnswerDisplayProps) {
               />
             </div>
 
-            {/* Text Content */}
             <div className="flex-1">
               <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-1">
                 {item.title}
