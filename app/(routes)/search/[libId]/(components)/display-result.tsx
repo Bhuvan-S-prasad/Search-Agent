@@ -357,7 +357,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
   const SearchingLoader = () => (
     <div className="mt-7" ref={loadingDivRef}>
       <div className="flex items-center gap-2 mb-4">
-        <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+        <Loader2 className="w-5 h-5 animate-spin text-gray-600" />
         <h2 className="font-bold text-3xl line-clamp-2">{currentQuery}</h2>
       </div>
       
@@ -371,7 +371,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
             <span>{label}</span>
           </div>
         ))}
-        <div className="ml-auto text-sm text-blue-600 font-medium flex items-center gap-2">
+        <div className="ml-auto text-sm text-gray-600 font-medium flex items-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin" />
           Searching...
         </div>

@@ -1,8 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"; 
-import { ArrowRight, Atom, AudioLinesIcon, CpuIcon, GlobeIcon, Mic, Paperclip, SearchCheck } from "lucide-react";
+import { ArrowRight, Atom, AudioLines, Cpu, Globe, Mic, Paperclip, SearchCheck } from "lucide-react";
 import Image from "next/image";
 import {
   DropdownMenu,
@@ -13,8 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { AIModelsOptions } from "@/services/Shared";
-import { useState, KeyboardEvent } from "react";
-import { TabsContent } from "@radix-ui/react-tabs";
+import { useState, KeyboardEvent, useRef, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import { supabase } from "@/services/supabase";
 import { v4 as uuidv4 } from 'uuid';
@@ -24,13 +22,22 @@ import { useRouter } from "next/navigation";
 
 export default function InputBox() {
 
-
-    const  [userSearchInput, setUserSearchInput] = useState<string>('');
+    const [userSearchInput, setUserSearchInput] = useState<string>('');
     const {user} = useUser();
-    const[searchType, setSearchType] = useState('Search');
+    const [searchType, setSearchType] = useState<'Search' | 'DeepSearch'>('Search');
     const [loading, setLoading] = useState(false);
-    const router = useRouter(); 
+    const router = useRouter();
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+    // Auto-resize textarea
+    useEffect(() => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+            textarea.style.height = 'auto';
+            const newHeight = Math.min(textarea.scrollHeight, 200);
+            textarea.style.height = `${newHeight}px`;
+        }
+    }, [userSearchInput]);
 
     const onSearchQuery = async () => {
         setLoading(true);
@@ -42,57 +49,76 @@ export default function InputBox() {
                 userEmail: user?.primaryEmailAddress?.emailAddress,
                 type: searchType,
                 libId: libid
-                
             }
         ]).select();
         setLoading(false);
 
         router.push('/search/'+libid)
-
     }
 
-    const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault(); 
-            if (userSearchInput) {
+            if (userSearchInput.trim()) {
                 onSearchQuery();
             }
         }
     }
 
+    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setUserSearchInput(e.target.value);
+    }
+
+    const placeholder = searchType === 'Search' ? 'Search with NOMI' : 'Deep Research Agent';
+
     return (
-        <div className="flex flex-col items-center justify-center h-screen w-full pl-20">
-                <Image src={'/logo.png'} alt="logo" width={250} height={250}/>
-            <div className="p-2 w-full max-w-2xl border rounded-2xl mt-8">
-                
-                <div className="flex justify-between pt-5 items-end">
-                
-                    <Tabs defaultValue="Search" className="w-[400px]">
-                        <TabsContent value="Search"><input type="text" placeholder="Search with NOMI"
-                        onChange={(e) => setUserSearchInput(e.target.value)}
+        <div className="flex flex-col items-center justify-center min-h-screen w-full pl-20 py-8">
+            <Image src={'/logo.png'} alt="logo" width={250} height={250}/>
+            
+            <div className="w-full max-w-2xl mt-8 border rounded-2xl p-5 bg-white">
+                <div className="w-full">
+                    <textarea 
+                        ref={textareaRef}
+                        placeholder={placeholder}
+                        value={userSearchInput}
+                        onChange={handleInputChange}
                         onKeyDown={handleKeyDown}
-                        className="w-full pb-3 outline-none"
-                        />
-                        </TabsContent>
-                        <TabsContent value="DeepSearch"><input type="text" placeholder="Deep Research Agent"
-                        onChange={(e) => setUserSearchInput(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        className="w-full pb-3 outline-none"
-                        />
-                        </TabsContent>
-                        <TabsList>
-                            <TabsTrigger value="Search" className="text-primary" onClick={() =>setSearchType('Search')}> <SearchCheck /> Search</TabsTrigger>
-                            <TabsTrigger value="DeepSearch" className="text-primary" onClick={() =>setSearchType('DeepSearch')}> <Atom /> DeepSearch</TabsTrigger>
-                        </TabsList>
-                    </Tabs>
-                
+                        className="w-full outline-none resize-none overflow-y-auto min-h-7 bg-transparent text-base"
+                        rows={1}
+                    />
+                </div>
+
+                <div className="flex items-center justify-between mt-4 pt-4 border-none">
+                    <div className="flex items-center gap-2">
+                        <button 
+                            onClick={() => setSearchType('Search')}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                                searchType === 'Search' 
+                                    ? 'bg-primary/10 text-primary font-medium' 
+                                    : 'hover:bg-gray-100 text-gray-600'
+                            }`}
+                        >
+                            <SearchCheck className="h-4 w-4" />
+                            Search
+                        </button>
+                        <button 
+                            onClick={() => setSearchType('DeepSearch')}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                                searchType === 'DeepSearch' 
+                                    ? 'bg-primary/10 text-primary font-medium' 
+                                    : 'hover:bg-gray-100 text-gray-600'
+                            }`}
+                        >
+                            <Atom className="h-4 w-4" />
+                            DeepSearch
+                        </button>
+                    </div>
+
                     <div className="flex gap-0.5 items-center">
-                            
-                        
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost">
-                                    <GlobeIcon className="text-primary h-5 w-5"/>
+                                <Button variant="ghost" size="icon">
+                                    <Globe className="text-primary h-5 w-5"/>
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
@@ -107,8 +133,8 @@ export default function InputBox() {
                         
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost">
-                                    <CpuIcon className="text-primary h-5 w-5"/>
+                                <Button variant="ghost" size="icon">
+                                    <Cpu className="text-primary h-5 w-5"/>
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
@@ -117,17 +143,16 @@ export default function InputBox() {
                                 {AIModelsOptions.map((model, index) => (
                                     <DropdownMenuItem key={index}>
                                         <div className="mb-1">
-                                            <h2>{model.name}</h2>                                                                              
+                                            <h2>{model.name}</h2>
                                         </div>
                                     </DropdownMenuItem>
                                 ))}
-                        </DropdownMenuContent>                
+                            </DropdownMenuContent>
                         </DropdownMenu>
-
 
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost">
+                                <Button variant="ghost" size="icon">
                                     <Paperclip className="text-primary h-5 w-5"/>
                                 </Button>
                             </DropdownMenuTrigger>
@@ -139,17 +164,29 @@ export default function InputBox() {
                             </DropdownMenuContent>
                         </DropdownMenu>
 
-                        <Button variant="ghost">
+                        <Button variant="ghost" size="icon">
                             <Mic className="text-primary h-5 w-5"/>
                         </Button>
 
-                        <Button className="text" onClick={() => {
-                            userSearchInput ? onSearchQuery() : null
-                        }} disabled={loading || !userSearchInput}>
-                            {loading ? <Spinner className="h-5 w-5 text-white" /> : (!userSearchInput ? <AudioLinesIcon className="h-5 w-5" /> : <ArrowRight />)}
+                        <Button 
+                            onClick={() => {
+                                if (userSearchInput.trim()) {
+                                    onSearchQuery();
+                                }
+                            }} 
+                            disabled={loading || !userSearchInput.trim()}
+                            size="icon"
+                        >
+                            {loading ? (
+                                <Spinner className="h-5 w-5 text-white" />
+                            ) : !userSearchInput.trim() ? (
+                                <AudioLines className="h-5 w-5" />
+                            ) : (
+                                <ArrowRight className="h-5 w-5" />
+                            )}
                         </Button>
                     </div>
-                 </div>
+                </div>
             </div>
         </div>
     )
