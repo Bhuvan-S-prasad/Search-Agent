@@ -30,7 +30,7 @@ function AnswerDisplay({ chat }: AnswerDisplayProps) {
 
   return (
     <div>
-      <div className="flex gap-2 flex-wrap mt-5 pb-8">
+      <div className="flex gap-2 flex-wrap mt-5 pb-8 mb-7">
         <SourceList webResults={chat?.searchResult}/>
         <DisplaySummary aiResponce={chat?.aiResponce}/>
       </div>

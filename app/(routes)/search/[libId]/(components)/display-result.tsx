@@ -10,6 +10,7 @@ import {
   LucideSparkles,
   LucideVideo,
   SendHorizonalIcon,
+  Loader2,
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -62,15 +63,34 @@ const tabs: Tab[] = [
   { label: "Sources", icon: LucideList },
 ];
 
+type LoadingState = "idle" | "searching" | "generating";
+
 function DisplayResult({ searchInputRecord }: DisplayResultProps) {
   const [activeTab, setActiveTab] = useState("Answer");
   const [searchResult, setSearchResult] = useState(searchInputRecord);
   const [userInput, setUserInput] = useState("");
+  const [loadingState, setLoadingState] = useState<LoadingState>("idle");
+  const [currentQuery, setCurrentQuery] = useState("");
   const isSearchingRef = useRef(false);
   const activeIntervalsRef = useRef<Set<NodeJS.Timeout>>(new Set());
+  const latestChatRef = useRef<HTMLDivElement>(null);
+  const loadingDivRef = useRef<HTMLDivElement>(null);
+  const previousChatCountRef = useRef(0);
 
   const params = useParams();
   const libId = params?.libId as string;
+
+  // Scroll to latest chat or loading div
+  const scrollToLatest = useCallback(() => {
+    const targetRef = loadingState !== "idle" ? loadingDivRef : latestChatRef;
+    if (targetRef.current) {
+      targetRef.current.scrollIntoView({ 
+        behavior: "smooth", 
+        block: "start",
+        inline: "nearest"
+      });
+    }
+  }, [loadingState]);
 
   // Fetch the latest search records from Supabase
   const GetSearchRecords = useCallback(async () => {
@@ -89,12 +109,23 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
       if (Library && Library.length > 0) {
         const libval = Library[0];
         console.log("Updated library data:", libval);
+        
+        // Check if new chat was added
+        const newChatCount = libval.chats?.length || 0;
+        const hadNewChat = newChatCount > previousChatCountRef.current;
+        
         setSearchResult(libval);
+        previousChatCountRef.current = newChatCount;
+        
+        // Scroll to new chat when it arrives
+        if (hadNewChat) {
+          setTimeout(() => scrollToLatest(), 100);
+        }
       }
     } catch (error) {
       console.error("Error in GetSearchRecords:", error);
     }
-  }, [libId]);
+  }, [libId, scrollToLatest]);
 
   // Main function to get search results and trigger AI response
   const GetSearchApiResult = useCallback(
@@ -108,7 +139,12 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
       }
 
       isSearchingRef.current = true;
+      setLoadingState("searching");
+      setCurrentQuery(searchQuery);
       console.log("Starting search for:", searchQuery);
+
+      // Scroll to loading div immediately
+      setTimeout(() => scrollToLatest(), 100);
 
       try {
         // Get search results from Google API
@@ -150,26 +186,31 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
         if (error) {
           console.error("Error inserting chat:", error);
           isSearchingRef.current = false;
+          setLoadingState("idle");
           return;
         }
 
         // Clear user input after successful search
         setUserInput("");
+        
+        // Change state to generating - users can now see search results!
+        setLoadingState("generating");
 
-        // Refresh the UI with the new chat record
+        // Refresh the UI with the new chat record (this shows Sources/Images/Videos tabs)
         await GetSearchRecords();
 
-        // Generate AI response asynchronously
+        // Generate AI response asynchronously (Answer tab will show loading)
         if (data && data[0]?.id) {
           await GenerateAIResp(formattedSearchResp, data[0].id, searchQuery);
         }
       } catch (error) {
         console.error("Error in GetSearchApiResult:", error);
+        setLoadingState("idle");
       } finally {
         isSearchingRef.current = false;
       }
     },
-    [userInput, searchInputRecord, libId, GetSearchRecords]
+    [userInput, searchInputRecord, libId, GetSearchRecords, scrollToLatest]
   );
 
   // Generate AI response and poll for completion
@@ -203,11 +244,15 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
             clearInterval(interval);
             // Update the UI with the new AI response
             await GetSearchRecords();
+            setLoadingState("idle");
+            setCurrentQuery("");
           }
         } catch (error) {
           console.error("Error checking status:", error);
           activeIntervalsRef.current.delete(interval);
           clearInterval(interval);
+          setLoadingState("idle");
+          setCurrentQuery("");
         }
       }, 1000);
 
@@ -215,6 +260,8 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
       activeIntervalsRef.current.add(interval);
     } catch (error) {
       console.error("Error in GenerateAIResp:", error);
+      setLoadingState("idle");
+      setCurrentQuery("");
     }
   };
 
@@ -235,6 +282,9 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
 
   // Initialize component - fetch results or trigger new search
   useEffect(() => {
+    // Initialize previous chat count
+    previousChatCountRef.current = searchInputRecord?.chats?.length || 0;
+    
     if (searchInputRecord?.chats?.length === 0) {
       GetSearchApiResult();
     } else {
@@ -254,44 +304,151 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
     };
   }, []);
 
-  return (
-    <div className="mt-5 md:pl-10 md:pr-15 lg:pl-25 lg:pr-25">
-      {searchResult?.chats?.map((chat, index) => (
-        <div key={chat.id || index} className="mt-7">
-          <h2 className="font-bold text-3xl line-clamp-2">
-            {chat.userSearchInput || searchResult?.searchInput}
-          </h2>
-          <div className="flex items-center space-x-6 border-b pt-4 pb-2">
-            {tabs.map(({ label, icon: Icon }) => (
-              <button
-                key={label}
-                onClick={() => setActiveTab(label)}
-                className={`flex items-center gap-1 relative text-sm font-medium ${
-                  activeTab === label
-                    ? "text-black font-semibold"
-                    : "text-gray-500"
-                }`}
-              >
-                <Icon className="w-5 h-5" />
-                <span>{label}</span>
-                {activeTab === label && (
-                  <span className="absolute -bottom-2 left-0 w-full h-0.5 bg-black rounded"></span>
-                )}
-              </button>
-            ))}
-            <div className="ml-auto text-sm text-gray-500">
-              1 task <span className="ml-1"> -- </span>
-            </div>
-          </div>
+  // Pulsating loader for Answer tab only
+  const AnswerLoadingPlaceholder = () => (
+    <div className="mt-6 space-y-4">
+      {/* Animated text generation effect */}
+      <div className="space-y-3">
+        <div className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-full bg-size-[200%_100%]"></div>
+        <div className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-11/12 bg-size-[200%_100%]" style={{ animationDelay: '0.1s' }}></div>
+        <div className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-10/12 bg-size-[200%_100%]" style={{ animationDelay: '0.2s' }}></div>
+      </div>
+      
+      <div className="space-y-3 mt-6">
+        <div className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-full bg-size-[200%_100%]" style={{ animationDelay: '0.3s' }}></div>
+        <div className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-9/12 bg-size-[200%_100%]" style={{ animationDelay: '0.4s' }}></div>
+      </div>
 
-          <div>
-            {activeTab === "Answer" && <AnswerDisplay chat={chat} />}
-            {activeTab === "Images" && <ImageDisplay chat={chat} />}
-            {activeTab === "Sources" && <SourceListTab chat={chat} />}
-          </div>
-          <hr className="my-5" />
+      <div className="space-y-3 mt-6">
+        <div className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-full bg-size-[200%_100%]" style={{ animationDelay: '0.5s' }}></div>
+        <div className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-10/12 bg-size-[200%_100%]" style={{ animationDelay: '0.6s' }}></div>
+        <div className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-8/12 bg-size-[200%_100%]" style={{ animationDelay: '0.7s' }}></div>
+      </div>
+
+      {/* Source cards skeleton */}
+      <div className="mt-8 space-y-3">
+        <div className="h-6 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-32 bg-size-[200%_100%]"></div>
+        <div className="grid grid-cols-1 gap-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="border rounded-lg p-4 space-y-2 bg-white">
+              <div className="h-5 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-3/4 bg-size-[200%_100%]" style={{ animationDelay: `${0.8 + i * 0.1}s` }}></div>
+              <div className="h-3 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-full bg-size-[200%_100%]" style={{ animationDelay: `${0.9 + i * 0.1}s` }}></div>
+            </div>
+          ))}
         </div>
-      ))}
+      </div>
+    </div>
+  );
+
+  // Full page loader only for initial search
+  const SearchingLoader = () => (
+    <div className="mt-7" ref={loadingDivRef}>
+      <div className="flex items-center gap-2 mb-4">
+        <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+        <h2 className="font-bold text-3xl line-clamp-2">{currentQuery}</h2>
+      </div>
+      
+      <div className="flex items-center space-x-6 border-b pt-4 pb-2">
+        {tabs.map(({ label, icon: Icon }) => (
+          <div
+            key={label}
+            className="flex items-center gap-1 relative text-sm font-medium text-gray-400"
+          >
+            <Icon className="w-5 h-5" />
+            <span>{label}</span>
+          </div>
+        ))}
+        <div className="ml-auto text-sm text-blue-600 font-medium flex items-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Searching...
+        </div>
+      </div>
+
+      <div className="mt-6 space-y-4">
+        <div className="space-y-3">
+          <div className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-full bg-size-[200%_100%]"></div>
+          <div className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-11/12 bg-size-[200%_100%]"></div>
+          <div className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-10/12 bg-size-[200%_100%]"></div>
+        </div>
+      </div>
+      <hr className="my-5" />
+    </div>
+  );
+
+  // Check if the latest chat is still generating
+  const isLatestChatGenerating = loadingState === "generating" && 
+    searchResult?.chats && 
+    searchResult.chats.length > 0 &&
+    !searchResult.chats[searchResult.chats.length - 1].aiResponce;
+
+  return (
+    <div className="mt-20 ml-27 mr-10 md:pl-10 md:pr-15 lg:pl-25 lg:pr-25 ">
+      {/* Render existing chats */}
+      {searchResult?.chats?.map((chat, index) => {
+        const isLatestChat = index === searchResult.chats.length - 1;
+        const showGeneratingState = isLatestChat && isLatestChatGenerating;
+        
+        return (
+          <div 
+            key={chat.id || index} 
+            className="mt-7"
+            ref={isLatestChat ? latestChatRef : null}
+          >
+            <h2 className="font-bold text-3xl line-clamp-2">
+              {chat.userSearchInput || searchResult?.searchInput}
+            </h2>
+            <div className="flex items-center space-x-6 border-b pt-4 pb-2">
+              {tabs.map(({ label, icon: Icon }) => (
+                <button
+                  key={label}
+                  onClick={() => setActiveTab(label)}
+                  className={`flex items-center gap-1 relative text-sm font-medium ${
+                    activeTab === label
+                      ? "text-black font-semibold"
+                      : "text-gray-500"
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span>{label}</span>
+                  {activeTab === label && (
+                    <span className="absolute -bottom-2 left-0 w-full h-0.5 bg-black rounded"></span>
+                  )}
+                </button>
+              ))}
+              {showGeneratingState && (
+                <div className="ml-auto text-sm text-blue-600 font-medium flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Generating answer...
+                </div>
+              )}
+              {!showGeneratingState && (
+                <div className="ml-auto text-sm text-gray-500">
+                  1 task <span className="ml-1"> -- </span>
+                </div>
+              )}
+            </div>
+
+            <div>
+              {activeTab === "Answer" && (
+                <>
+                  {showGeneratingState ? (
+                    <AnswerLoadingPlaceholder />
+                  ) : (
+                    <AnswerDisplay chat={chat} />
+                  )}
+                </>
+              )}
+              {activeTab === "Images" && <ImageDisplay chat={chat} />}
+              {activeTab === "Sources" && <SourceListTab chat={chat} />}
+            </div>
+            <hr className="my-5" />
+          </div>
+        );
+      })}
+
+      {/* Show full page loader only during initial search */}
+      {loadingState === "searching" && <SearchingLoader />}
+      
       <div className="bg-white w-full border-lg shadow-md p-3 px-5 flex justify-between fixed bottom-5 rounded-2xl max-w-md lg:max-w-xl xl:max-w-3xl">
         <input
           placeholder="ask anything"
@@ -299,13 +456,17 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
           value={userInput}
           onChange={(e) => setUserInput(e.target.value)}
           onKeyPress={handleKeyPress}
-          disabled={isSearchingRef.current}
+          disabled={loadingState !== "idle"}
         />
         <Button
           onClick={handleSearch}
-          disabled={!userInput.trim() || isSearchingRef.current}
+          disabled={!userInput.trim() || loadingState !== "idle"}
         >
-          {userInput?.length > 0 && <SendHorizonalIcon />}
+          {loadingState !== "idle" ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            userInput?.length > 0 && <SendHorizonalIcon />
+          )}
         </Button>
       </div>
     </div>

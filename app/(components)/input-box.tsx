@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { AIModelsOptions } from "@/services/Shared";
-import { useState } from "react";
+import { useState, KeyboardEvent } from "react";
 import { TabsContent } from "@radix-ui/react-tabs";
 import { useUser } from "@clerk/nextjs";
 import { supabase } from "@/services/supabase";
@@ -23,6 +23,7 @@ import { useRouter } from "next/navigation";
 
 
 export default function InputBox() {
+
 
     const  [userSearchInput, setUserSearchInput] = useState<string>('');
     const {user} = useUser();
@@ -50,8 +51,17 @@ export default function InputBox() {
 
     }
 
+    const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault(); 
+            if (userSearchInput) {
+                onSearchQuery();
+            }
+        }
+    }
+
     return (
-        <div className="flex flex-col items-center pb-35 w-full">
+        <div className="flex flex-col items-center justify-center h-screen w-full pl-20">
                 <Image src={'/logo.png'} alt="logo" width={250} height={250}/>
             <div className="p-2 w-full max-w-2xl border rounded-2xl mt-8">
                 
@@ -60,11 +70,13 @@ export default function InputBox() {
                     <Tabs defaultValue="Search" className="w-[400px]">
                         <TabsContent value="Search"><input type="text" placeholder="Search with NOMI"
                         onChange={(e) => setUserSearchInput(e.target.value)}
+                        onKeyDown={handleKeyDown}
                         className="w-full pb-3 outline-none"
                         />
                         </TabsContent>
                         <TabsContent value="DeepSearch"><input type="text" placeholder="Deep Research Agent"
                         onChange={(e) => setUserSearchInput(e.target.value)}
+                        onKeyDown={handleKeyDown}
                         className="w-full pb-3 outline-none"
                         />
                         </TabsContent>

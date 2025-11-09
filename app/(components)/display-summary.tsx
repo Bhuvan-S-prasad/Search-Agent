@@ -22,7 +22,7 @@ function DisplaySummary({ aiResponce }: DisplaySummaryProps) {
   }
 
   return (
-    <div className="prose prose-neutral dark:prose-invert max-w-none text-[15px] leading-relaxed">
+    <div className="prose prose-neutral dark:prose-invert max-w-none text-[15px] leading-relaxed text-justify">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeRaw]}

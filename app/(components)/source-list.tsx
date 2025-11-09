@@ -13,7 +13,7 @@ function SourceList({ webResults = [] }: { webResults?: WebResult[] }) {
     <div className="overflow-x-auto overflow-y-hidden scrollbar-hide">
       <div className="flex gap-2 min-w-max">
         {webResults.map((item, index) => {
-          const faviconUrl = item?.img || item?.thumbnail;
+          const faviconUrl = item?.img || item?.thumbnail || "/logo.png";
           const domain = item?.url
             ? new URL(item.url).hostname.replace(/^www\./, "")
             : "unknown.com";

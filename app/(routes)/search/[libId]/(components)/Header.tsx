@@ -13,24 +13,33 @@ interface HeaderProps {
 
 function Header({ searchInputRecord }: HeaderProps) {
   return (
-    <div className="px-4 pb-4 border-b flex justify-between">
-      <div className="flex gap-2 items-center">
-        <UserButton />
-        <div className="flex gap-2 items-center">
-          <Clock className="h-4 w-4 text-primary"/>
-          <h2>{moment(searchInputRecord?.created_at).fromNow()}</h2>
+    <div className="fixed top-0 left-20 right-0 z-40 bg-background">
+      <div className="flex items-center justify-between px-8 py-4">
+        {/* Left Section - User */}
+        <div className="flex gap-2 items-center min-w-[100px]">
+          <UserButton />
         </div>
-      </div>
 
-      <h2 className="line-clamp-1 max-w-md">{searchInputRecord?.searchInput}</h2>
+        {/* Center Section - Search Input */}
+        <div className="flex-1 flex justify-center">
+          <h2 className="line-clamp-1 max-w-2xl text-lg font-semibold text-center">
+            {searchInputRecord?.searchInput}
+          </h2>
+        </div>
 
-      <div className="flex gap-3">
-        <Button><Link /></Button>
-        <Button> <ShareIcon /> Share</Button>
+        {/* Right Section - Actions */}
+        <div className="flex gap-3 min-w-[100px] justify-end">
+          <Button variant="ghost" size="icon">
+            <Link className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="sm">
+            <ShareIcon className="h-4 w-4 mr-2" />
+            Share
+          </Button>
+        </div>
       </div>
     </div>
   );
 }
 
 export default Header;
-
