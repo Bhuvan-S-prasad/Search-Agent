@@ -59,14 +59,14 @@ interface Tab {
 const tabs: Tab[] = [
   { label: "Answer", icon: LucideSparkles },
   { label: "Images", icon: LucideImage },
-  { label: "Videos", icon: LucideVideo },
   { label: "Sources", icon: LucideList },
 ];
 
 type LoadingState = "idle" | "searching" | "generating";
 
 function DisplayResult({ searchInputRecord }: DisplayResultProps) {
-  const [activeTab, setActiveTab] = useState("Answer");
+  // Change: Track active tab per chat using chat ID as key
+  const [activeTabs, setActiveTabs] = useState<Record<number, string>>({});
   const [searchResult, setSearchResult] = useState(searchInputRecord);
   const [userInput, setUserInput] = useState("");
   const [loadingState, setLoadingState] = useState<LoadingState>("idle");
@@ -79,6 +79,19 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
 
   const params = useParams();
   const libId = params?.libId as string;
+
+  // Helper function to get active tab for a specific chat
+  const getActiveTab = (chatId: number) => {
+    return activeTabs[chatId] || "Answer";
+  };
+
+  // Helper function to set active tab for a specific chat
+  const setActiveTabForChat = (chatId: number, tab: string) => {
+    setActiveTabs(prev => ({
+      ...prev,
+      [chatId]: tab
+    }));
+  };
 
   // Scroll to latest chat or loading div
   const scrollToLatest = useCallback(() => {
@@ -387,6 +400,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
       {searchResult?.chats?.map((chat, index) => {
         const isLatestChat = index === searchResult.chats.length - 1;
         const showGeneratingState = isLatestChat && isLatestChatGenerating;
+        const chatActiveTab = getActiveTab(chat.id);
         
         return (
           <div 
@@ -401,16 +415,16 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
               {tabs.map(({ label, icon: Icon }) => (
                 <button
                   key={label}
-                  onClick={() => setActiveTab(label)}
+                  onClick={() => setActiveTabForChat(chat.id, label)}
                   className={`flex items-center gap-1 relative text-sm font-medium ${
-                    activeTab === label
+                    chatActiveTab === label
                       ? "text-black font-semibold"
                       : "text-gray-500"
                   }`}
                 >
                   <Icon className="w-5 h-5" />
                   <span>{label}</span>
-                  {activeTab === label && (
+                  {chatActiveTab === label && (
                     <span className="absolute -bottom-2 left-0 w-full h-0.5 bg-black rounded"></span>
                   )}
                 </button>
@@ -429,7 +443,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
             </div>
 
             <div>
-              {activeTab === "Answer" && (
+              {chatActiveTab === "Answer" && (
                 <>
                   {showGeneratingState ? (
                     <AnswerLoadingPlaceholder />
@@ -438,8 +452,8 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
                   )}
                 </>
               )}
-              {activeTab === "Images" && <ImageDisplay chat={chat} />}
-              {activeTab === "Sources" && <SourceListTab chat={chat} />}
+              {chatActiveTab === "Images" && <ImageDisplay chat={chat} />}
+              {chatActiveTab === "Sources" && <SourceListTab chat={chat} />}
             </div>
             <hr className="my-5" />
           </div>
