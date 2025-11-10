@@ -1,6 +1,8 @@
 ## Search Agent 🔍
 
-![NOMI](https://ik.imagekit.io/wq68aygdr/logo.png?updatedAt=1762786354336)
+<p align="center">
+  <img src="https://ik.imagekit.io/wq68aygdr/logo.png?updatedAt=1762786354336" alt="NOMI" />
+</p>
 
 An AI-powered web search assistant that finds sources, synthesizes answers with inline citations, and offers a personalized discovery experience (news, markets, weather).
 

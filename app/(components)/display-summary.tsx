@@ -4,8 +4,9 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { cn } from "@/lib/utils";
-import { Image, ExternalLink } from "lucide-react";
-import { useState, useMemo } from "react";
+import { ExternalLink } from "lucide-react";
+import { useState, useMemo, useCallback } from "react";
+
 
 interface DisplaySummaryProps {
   aiResponce?: string;
@@ -21,13 +22,7 @@ function DisplaySummary({ aiResponce, searchResult = [] }: DisplaySummaryProps) 
   const [hoveredCitation, setHoveredCitation] = useState<number | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
-  if (!aiResponce) {
-    return (
-      <div>
-        <div>no summary</div>
-      </div>
-    );
-  }
+  // Do not early-return before hooks to satisfy React hook rules
 
   // Extract domain name from URL for display
   const getDomainName = (url: string) => {
@@ -40,19 +35,43 @@ function DisplaySummary({ aiResponce, searchResult = [] }: DisplaySummaryProps) 
     }
   };
 
-  // Pre-process the markdown to replace [1], [2] etc with custom citation components
+  const formatSourceLabel = useCallback(
+    (citationNums: number[]) => {
+      if (citationNums.length === 0) {
+        return "Source";
+      }
+      const firstSource = searchResult[citationNums[0] - 1];
+      const baseName = firstSource?.name || getDomainName(firstSource?.url || "");
+      if (citationNums.length === 1) {
+        return baseName || "Source";
+      }
+      return `${baseName || "Source"} +${citationNums.length - 1}`;
+    },
+    [searchResult]
+  );
+
+  const escapeHtml = (value: string) =>
+    value
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
+  // Pre-process the markdown to replace [1], [2], [1, 3] etc with custom citation components
   const processedContent = useMemo(() => {
-    return aiResponce.replace(/\[(\d+(?:,\s*\d+)*)\]/g, (match, nums) => {
-      const citationNums = nums.split(',').map((n: string) => parseInt(n.trim()));
-      const sourceNames = citationNums.map((num: number) => {
-        const source = searchResult[num - 1];
-        return source?.name || getDomainName(source?.url || '');
-      }).join(', ');
-      
-      // Return a custom marker that we'll replace with React components
-      return `<cite data-citations="${nums}">${sourceNames}</cite>`;
+    // Keep the visible text as [1], [1,2], etc. The tooltip will render details.
+    return (aiResponce || "").replace(/\[(\d+(?:\s*,\s*\d+)*)\]/g, (match, nums) => {
+      const citationNums = nums
+        .split(",")
+        .map((n: string) => parseInt(n.trim(), 10))
+        .filter((n: number) => !Number.isNaN(n));
+      const cleanNums = citationNums.join(",");
+      const label = formatSourceLabel(citationNums);
+      const safeLabel = escapeHtml(label);
+      return `<cite data-citations="${cleanNums}" data-label="${safeLabel}">${safeLabel}</cite>`;
     });
-  }, [aiResponce, searchResult]);
+  }, [aiResponce, formatSourceLabel]);
 
   return (
     <div className="prose prose-neutral dark:prose-invert max-w-none text-[15px] leading-relaxed text-justify">
@@ -133,14 +152,20 @@ function DisplaySummary({ aiResponce, searchResult = [] }: DisplaySummaryProps) 
               {...props}
             />
           ),
-          img: ({ ...props }) => (
-            <Image
+          img: ({ ...props }) => {
+            const alt = (props as Record<string, unknown>).alt as string | undefined;
+            return (
+            <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               className="rounded-lg shadow-sm my-3 max-w-full"
-              alt={props.alt || ""}
+              alt={alt || ""}
               {...props}
             />
-          ),
-          code: ({ inline, className, children, ...props }: any) => (
+            </>
+            );
+          },
+          code: ({ inline, children, ...props }: { inline?: boolean; children?: React.ReactNode } & React.HTMLAttributes<HTMLElement>) => (
             <code
               className={cn(
                 "rounded-md px-1.5 py-0.5 text-sm font-mono bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200",
@@ -151,53 +176,81 @@ function DisplaySummary({ aiResponce, searchResult = [] }: DisplaySummaryProps) 
               {children}
             </code>
           ),
-          cite: ({ children, ...props }: any) => {
-            const dataCitations = props['data-citations'];
+          cite: ({ children, ...props }: { children?: React.ReactNode } & React.HTMLAttributes<HTMLElement>) => {
+            const dataCitations = (props as Record<string, unknown>)['data-citations'] as string | undefined;
             if (!dataCitations) return <cite {...props}>{children}</cite>;
-            
-            const citationNums = dataCitations.split(',').map((n: string) => parseInt(n.trim()));
+
+            const citationNums: number[] = String(dataCitations)
+              .split(',')
+              .map((n: string) => parseInt(n.trim()))
+              .filter((n: number) => !Number.isNaN(n));
+
             const firstCitation = citationNums[0];
-            
+            const firstSource = searchResult[firstCitation - 1];
+            const headingBase =
+              firstSource?.name ||
+              getDomainName(firstSource?.url || '') ||
+              ((props as Record<string, unknown>)['data-label'] as string | undefined) ||
+              'Source';
+            const heading =
+              citationNums.length > 1
+                ? `${headingBase} · ${citationNums.length} sources`
+                : headingBase;
+
             return (
               <span
-                className="relative inline-block mx-0.5"
+                className="relative inline-block mx-0.5 align-baseline"
                 onMouseEnter={(e) => {
                   setHoveredCitation(firstCitation);
                   const rect = e.currentTarget.getBoundingClientRect();
-                  setTooltipPosition({ 
-                    x: rect.left + window.scrollX, 
-                    y: rect.bottom + window.scrollY + 5 
+                  setTooltipPosition({
+                    x: rect.left + window.scrollX,
+                    y: rect.bottom + window.scrollY + 5
                   });
                 }}
                 onMouseLeave={() => setHoveredCitation(null)}
               >
-                <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer text-xs font-medium px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/30 rounded border border-blue-200 dark:border-blue-700 transition-colors">
+                <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer text-[11px] font-semibold px-1 py-0.5 bg-blue-50 dark:bg-blue-900/30 rounded border border-blue-200 dark:border-blue-700 transition-colors leading-none">
                   {children}
                 </span>
-                
-                {hoveredCitation === firstCitation && searchResult[firstCitation - 1] && (
+
+                {hoveredCitation === firstCitation && citationNums.length > 0 && (
                   <div
-                    className="fixed z-[9999] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-2xl p-3 max-w-sm pointer-events-none animate-in fade-in duration-200"
+                    className="fixed z-[9999] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-2xl p-3 max-w-md pointer-events-none animate-in fade-in duration-150"
                     style={{
                       left: `${tooltipPosition.x}px`,
                       top: `${tooltipPosition.y}px`,
                     }}
                   >
-                    <div className="flex items-start gap-2">
-                      <ExternalLink className="w-4 h-4 mt-0.5 text-blue-500 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-sm text-gray-900 dark:text-gray-100 line-clamp-2 mb-1">
-                          {searchResult[firstCitation - 1]?.title || "Source"}
-                        </div>
-                        <div className="text-xs text-blue-600 dark:text-blue-400 break-all">
-                          {searchResult[firstCitation - 1]?.url}
-                        </div>
-                        {searchResult[firstCitation - 1]?.description && (
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1.5 line-clamp-3">
-                            {searchResult[firstCitation - 1]?.description}
+                    <div className="text-xs font-semibold text-gray-700 dark:text-gray-200 mb-2">
+                      {heading}
+                    </div>
+                    <div className="space-y-2">
+                      {citationNums.map((num: number) => {
+                        const src = searchResult[num - 1];
+                        if (!src) return null;
+                        const domain = getDomainName(src.url || '');
+                        return (
+                          <div key={num} className="flex items-start gap-2">
+                            <ExternalLink className="w-4 h-4 mt-0.5 text-blue-500 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-sm text-gray-900 dark:text-gray-100 line-clamp-2">
+                                {src.title || domain || "Source"}
+                              </div>
+                              {!!src.url && (
+                                <div className="text-[11px] text-blue-600 dark:text-blue-400 break-all">
+                                  {src.url}
+                                </div>
+                              )}
+                              {!!src.description && (
+                                <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-3">
+                                  {src.description}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        )}
-                      </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
