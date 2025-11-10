@@ -139,12 +139,18 @@ yarn dev
 - [x] Implement discovery page with GNews, weather, markets
 - [x] Integrate Clerk auth and middleware protection
 - [x] Wire Google CSE + formatted search result ingestion
-- [x] Add Inngest background job for LLM answer generation
-- [x] Persist chats and answers in Supabase
-- [ ] Fix inline citation to display the source on hover
+- [x] Add Inngest background job for LLM answer generation   (9/11/2025)
+- [x] Persist chats and answers in Supabase                  (9/11/2025)
+- [x] Fix inline citation to display the source on hover     (10/11/2025)
 - [ ] Integrate deepSearch with agentic capabilities
 - [ ] add multiple AI models support
 - [ ] add Finance page to retreive the data from a stock market api and generate a report using LLM
+- [ ] make sharing button functional
+- [ ] File uploading and attachments
+- [ ] Audio input
+- [ ] Dedicated pages for each news summary and its corresponding insights originating from the Discover Page.
+- [ ] Dynamically Respond and Search based on user query (Trigger search only if necessary)
+
 
 ## 🙏 Acknowledgements
 

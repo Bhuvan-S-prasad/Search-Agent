@@ -148,7 +148,7 @@ export default function AppSidebar() {
                 libraryHistory.map((item, index) => (
                   <div
                     key={index}
-                    className="p-3 hover:bg-accent cursor-pointer transition-colors"
+                    className="py-1.5 px-3 hover:bg-accent cursor-pointer transition-colors"
                     onClick={() => handleLibraryClick(item.libId)}
                   >
                     <h3 className="font-medium text-sm truncate">{item.searchInput}</h3>
