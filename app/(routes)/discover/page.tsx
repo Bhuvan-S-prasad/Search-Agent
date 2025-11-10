@@ -1,7 +1,7 @@
 "use client";
 
 import axios from "axios";
-import { DollarSign, Globe, Palette, Star, Tv, Cloud, TrendingUp, TrendingDown } from "lucide-react";
+import { DollarSign, Globe, Palette, Star, Tv, Cloud, TrendingUp, TrendingDown, Volleyball, TvIcon, Cpu } from "lucide-react";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 
@@ -48,9 +48,9 @@ interface Option {
 const options: Option[] = [
   { title: "For You", icon: Star, query: "breaking" },
   { title: "Finance", icon: DollarSign, query: "business finance" },
-  { title: "Technology", icon: Tv, query: "technology" },
-  { title: "Sports", icon: Star, query: "sports" },
-  { title: "Entertainment", icon: Palette, query: "entertainment"},
+  { title: "Technology", icon: Cpu, query: "technology" },
+  { title: "Sports", icon: Volleyball, query: "sports" },
+  { title: "Entertainment", icon: TvIcon, query: "entertainment"},
   { title: "Politics", icon: Globe, query: "politics" },
 ];
 
