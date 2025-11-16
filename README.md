@@ -127,7 +127,7 @@ yarn dev
 │   ├── (components)/         # Shared UI (sidebar, displays)
 │   ├── (routes)/discover/    # Discovery page (news/weather/markets)
 │   ├── (routes)/search/      # Search flow (Library/chats)
-│   └── api/                  # API routes (search, inngest, news, weather, market)
+│   └── api/                  # API routes (search, inngest, news, weather, market, llm)
 ├── components/ui/            # shadcn/ui primitives
 ├── inngest/                  # Inngest client and functions
 ├── services/                 # Supabase client and shared config

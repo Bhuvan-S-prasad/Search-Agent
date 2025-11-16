@@ -41,19 +41,49 @@ export default function InputBox() {
 
     const onSearchQuery = async () => {
         setLoading(true);
-        const libid = uuidv4();
+        
+        if (searchType === 'DeepSearch') {
+            // For DeepSearch, create a chat directly and start research
+            try {
+                const response = await fetch('/api/deep-research/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: userSearchInput,
+                        userId: user?.id || '',
+                        userEmail: user?.primaryEmailAddress?.emailAddress || '',
+                    }),
+                });
 
-        const result = await supabase.from('Library').insert([
-            {
-                searchInput: userSearchInput,
-                userEmail: user?.primaryEmailAddress?.emailAddress,
-                type: searchType,
-                libId: libid
+                const data = await response.json();
+                if (data.chatId) {
+                    router.push(`/deep-research?chatId=${data.chatId}`);
+                } else {
+                    console.error('Failed to start deep research');
+                }
+            } catch (error) {
+                console.error('Error starting deep research:', error);
+            } finally {
+                setLoading(false);
             }
-        ]).select();
-        setLoading(false);
+        } else {
+            // Regular search flow
+            const libid = uuidv4();
 
-        router.push('/search/'+libid)
+            const result = await supabase.from('Library').insert([
+                {
+                    searchInput: userSearchInput,
+                    userEmail: user?.primaryEmailAddress?.emailAddress,
+                    type: searchType,
+                    libId: libid
+                }
+            ]).select();
+            setLoading(false);
+
+            router.push('/search/'+libid)
+        }
     }
 
     const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
