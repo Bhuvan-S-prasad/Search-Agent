@@ -1,25 +1,289 @@
 import { inngest } from "./client";
 import { supabase } from "@/services/supabase";
 
-export const llmModel = inngest.createFunction(
-  {
-    id: "llm-model",
-  },
-  {
-    event: "llm-model",
-  },
-  async ({ event, step }) => {
-    // Format search results with index numbers for citations
-    const searchResults = event.data.searchResult;
-    const formattedResults = searchResults.map((result: any, index: number) => ({
-      index: index + 1,
-      title: result.title || "Untitled",
-      url: result.url || result.link || "",
-      description: result.description || result.snippet || "",
-      content: result.content || result.snippet || ""
-    }));
+// NEW IMPORTS (Deep Research)
+import { z } from "zod";
+import { tool } from "langchain";
+import { HumanMessage } from "@langchain/core/messages";
+import { ChatGroq } from "@langchain/groq";
 
-    const systemPrompt = `
+// -----------------------------------------------------------
+// Helper: update deep research status on LIBRARY table
+// -----------------------------------------------------------
+async function updateResearchStatus(
+    libId: string,
+    status: string,
+    progress?: string
+) {
+    const updateData: any = { deepResearchStatus: status };
+    if (progress) updateData.deepResearchProgress = progress;
+
+    const { error } = await supabase
+        .from("Library")
+        .update(updateData)
+        .eq("libId", libId);
+
+    if (error) {
+        console.error("Error updating research status:", error);
+    }
+}
+
+// -----------------------------------------------------------
+// Helper: save sources to the CURRENT chat record
+// -----------------------------------------------------------
+async function saveSourcesToChat(chatId: number, sources: any[]) {
+    const { error } = await supabase
+        .from("chats")
+        .update({ searchResult: sources })
+        .eq("id", chatId);
+
+    if (error) {
+        console.error("Error saving sources:", error);
+    }
+}
+
+// -----------------------------------------------------------
+// Helper: save final report to BOTH Library and current chat
+// -----------------------------------------------------------
+async function saveFinalReport(libId: string, chatId: number, report: string) {
+    // Save to current chat record
+    const { error: chatError } = await supabase
+        .from("chats")
+        .update({ aiResponce: report })
+        .eq("id", chatId);
+
+    if (chatError) {
+        console.error("Error saving report to chat:", chatError);
+    }
+
+    // Save to Library table
+    const { error: libError } = await supabase
+        .from("Library")
+        .update({
+            deepResearchReport: report,
+            deepResearchStatus: "completed",
+            deepResearchProgress: "Research complete"
+        })
+        .eq("libId", libId);
+
+    if (libError) {
+        console.error("Error saving report to Library:", libError);
+    }
+}
+
+// -----------------------------------------------------------
+// Google Custom Search (kept minimal & lightweight)
+// -----------------------------------------------------------
+const googleSearch = tool(
+    async ({ query }: { query: string }) => {
+        try {
+            const endpoint = `https://www.googleapis.com/customsearch/v1?key=${process.env.GOOGLE_SEARCH_API_KEY}&cx=${process.env.CSE_ID}&q=${encodeURIComponent(
+                query
+            )}`;
+            const response = await fetch(endpoint);
+            const data = await response.json();
+
+            const results =
+                data.items?.map((item: any) => ({
+                    title: item.title,
+                    link: item.link,
+                    snippet: item.snippet,
+                })) || [];
+
+            return { query, results };
+        } catch (error) {
+            console.error("Search error:", error);
+            return { query, results: [], error: error.message };
+        }
+    },
+    {
+        name: "google_search",
+        description: "Google Custom Search: returns title, link, snippet.",
+        schema: z.object({
+            query: z.string(),
+        }),
+    }
+);
+
+// -----------------------------------------------------------
+// Free model: Groq Llama-3.1-8B (best FREE choice)
+// -----------------------------------------------------------
+const freeModel = new ChatGroq({
+    model: "llama-3.1-8b-instant",
+    temperature: 0,
+    apiKey: process.env.GROQ_API_KEY,
+});
+
+// -----------------------------------------------------------
+// STEP 1 — Split query into 3–5 sub-queries
+// -----------------------------------------------------------
+async function splitIntoSubqueries(query: string) {
+    const prompt = `
+Break the following research question into 3–5 smaller search queries.
+Each sub-query should cover a different aspect of the topic.
+Respond ONLY as a JSON array of strings.
+
+User question:
+"${query}"
+`;
+
+    const response = await freeModel.invoke([new HumanMessage(prompt)]);
+    const content = String(response.content);
+    try {
+        const arr = JSON.parse(content);
+        return Array.isArray(arr) ? arr.slice(0, 5) : [query];
+    } catch {
+        return [query];
+    }
+}
+
+// -----------------------------------------------------------
+// STEP 2 — Run Google Search for each sub-query
+// -----------------------------------------------------------
+async function runSearches(subqueries: string[]) {
+    const results: any[] = [];
+
+    for (let i = 0; i < subqueries.length; i++) {
+        const sq = subqueries[i];
+
+        const searchResponse = await googleSearch.invoke({
+            query: sq,
+        });
+
+        const parsed =
+            typeof searchResponse === "string"
+                ? JSON.parse(searchResponse)
+                : searchResponse;
+
+        const indexed = parsed.results.map((r: any, idx: number) => ({
+            id: `${i + 1}.${idx + 1}`,
+            title: r.title,
+            url: r.link,
+            snippet: r.snippet,
+            description: r.snippet,
+            displayLink: new URL(r.link).hostname,
+        }));
+
+        results.push(...indexed);
+    }
+    return results;
+}
+
+// -----------------------------------------------------------
+// STEP 3 — Build final report with inline citations
+// -----------------------------------------------------------
+async function buildFinalReport(userQuery: string, allSources: any[]) {
+    const sourcesText = allSources
+        .map(
+            (s) =>
+                `[${s.id}] ${s.title}\nURL: ${s.url}\nSnippet: ${s.snippet}\n`
+        )
+        .join("\n");
+
+    const prompt = `
+You are an expert research assistant. Write a detailed report with inline citations.
+
+Rules for citations:
+- Cite sources using bracketed IDs exactly like [2.1], [1.3], [4.2].
+- Citations MUST appear immediately after the sentence they support.
+- DO NOT create a "Sources" section.
+- Write in paragraphs, with markdown headings (##).
+- No bullet lists unless needed.
+- No notes about what you are doing.
+
+User question:
+"${userQuery}"
+
+Available sources:
+${sourcesText}
+
+Write the final detailed answer now.
+`;
+
+    const response = await freeModel.invoke([new HumanMessage(prompt)]);
+    return String(response.content);
+}
+
+// -----------------------------------------------------------
+// MAIN Deep Research Function (CORRECTED for Library schema)
+// -----------------------------------------------------------
+export const deepResearchFunction = inngest.createFunction(
+    { id: "deep-research", retries: 0 },
+    { event: "deep-research" },
+    async ({ event, step }) => {
+        const { libId, chatId, query } = event.data;
+
+        await step.run("start", async () => {
+            await updateResearchStatus(
+                libId,
+                "researching",
+                "Analyzing and splitting query..."
+            );
+        });
+
+        // 1. Split query
+        const subqueries = await step.run("split-query", async () => {
+            return await splitIntoSubqueries(query);
+        });
+
+        await updateResearchStatus(
+            libId,
+            "researching",
+            `Running ${subqueries.length} web searches...`
+        );
+
+        // 2. Perform searches
+        const sources = await step.run("search-all", async () => {
+            return await runSearches(subqueries);
+        });
+
+        // Save sources to the CURRENT chat record
+        await step.run("save-sources", async () => {
+            await saveSourcesToChat(chatId, sources);
+        });
+
+        await updateResearchStatus(
+            libId,
+            "writing",
+            "Generating final report..."
+        );
+
+        // 3. Build report
+        const report = await step.run("build-report", async () => {
+            return await buildFinalReport(query, sources);
+        });
+
+        // 4. Save report to BOTH Library table and current chat
+        await step.run("save-report", async () => {
+            await saveFinalReport(libId, chatId, report);
+        });
+
+        return { success: true, libId, chatId, message: "Deep research completed." };
+    }
+);
+
+
+// LLM function for search (keeping this as is)
+
+export const llmModel = inngest.createFunction(
+    {
+        id: "llm-model",
+    },
+    {
+        event: "llm-model",
+    },
+    async ({ event, step }) => {
+        // Format search results with index numbers for citations
+        const searchResults = event.data.searchResult;
+        const formattedResults = searchResults.map((result: any, index: number) => ({
+            index: index + 1,
+            title: result.title || "Untitled",
+            url: result.url || result.link || "",
+            description: result.description || result.snippet || "",
+            content: result.content || result.snippet || ""
+        }));
+
+        const systemPrompt = `
 <goal>
 You are NOMI, a helpful search assistant trained by NOMI AI. Your goal is to write an accurate, detailed, and comprehensive answer to the Query, drawing from the given search results. You will be provided sources from the internet to help you answer the Query. Your answer should be informed by the provided "Search results". Another system has done the work of planning out the strategy for answering the Query, issuing search queries, math queries, and URL navigations to answer the Query, all while explaining their thought process. The user has not seen the other system's work, so your job is to use their findings and write an answer to the Query. Although you may consider the other system's when answering the Query, your answer must be self-contained and respond fully to the Query. Your answer must be correct, high-quality, well-formatted, and written by an expert using an unbiased and journalistic tone.
 </goal>
@@ -142,57 +406,57 @@ Content: ${result.content}
 Remember: Use inline citations like [1], [2], [3] immediately after statements. No reference list at the end.
     `;
 
-    // Gemini API call
-    const aiResp = await step.run("generate-ai-llm-call", async () => {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                role: "user",
-                parts: [
-                  {
-                    text: systemPrompt,
-                  },
-                ],
-              },
-            ],
-            generationConfig: {
-              temperature: 0.7,
-              topK: 40,
-              topP: 0.95,
-              maxOutputTokens: 2048,
-            },
-          }),
-        }
-      );
+        // Gemini API call
+        const aiResp = await step.run("generate-ai-llm-call", async () => {
+            const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        contents: [
+                            {
+                                role: "user",
+                                parts: [
+                                    {
+                                        text: systemPrompt,
+                                    },
+                                ],
+                            },
+                        ],
+                        generationConfig: {
+                            temperature: 0.7,
+                            topK: 40,
+                            topP: 0.95,
+                            maxOutputTokens: 2048,
+                        },
+                    }),
+                }
+            );
 
-      return await response.json();
-    });
+            return await response.json();
+        });
 
-    // Save AI response to Supabase (keeping original schema)
-    const saveToDb = await step.run("saveToDb", async () => {
-      const firstPart = aiResp?.candidates?.[0]?.content?.parts?.[0];
-      const aiText = firstPart && "text" in firstPart ? firstPart.text : undefined;
+        // Save AI response to Supabase (keeping original schema)
+        const saveToDb = await step.run("saveToDb", async () => {
+            const firstPart = aiResp?.candidates?.[0]?.content?.parts?.[0];
+            const aiText = firstPart && "text" in firstPart ? firstPart.text : undefined;
 
-      const { data, error } = await supabase
-        .from("chats")
-        .update({ 
-          aiResponce: aiText
-          // searchResult already exists in the row from your initial insert
-        })
-        .eq("id", event.data.recordId)
-        .select();
+            const { data, error } = await supabase
+                .from("chats")
+                .update({
+                    aiResponce: aiText
+                    // searchResult already exists in the row from your initial insert
+                })
+                .eq("id", event.data.recordId)
+                .select();
 
-      if (error) throw error;
-      return data;
-    });
+            if (error) throw error;
+            return data;
+        });
 
-    return { success: true, data: saveToDb };
-  }
+        return { success: true, data: saveToDb };
+    }
 );

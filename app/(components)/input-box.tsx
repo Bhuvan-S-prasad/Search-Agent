@@ -43,7 +43,7 @@ export default function InputBox() {
         setLoading(true);
         
         if (searchType === 'DeepSearch') {
-            // For DeepSearch, create a chat directly and start research
+            // For DeepSearch, create a library entry and start research
             try {
                 const response = await fetch('/api/deep-research/start', {
                     method: 'POST',
@@ -57,15 +57,24 @@ export default function InputBox() {
                     }),
                 });
 
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                    console.error('Failed to start deep research:', errorData.error || 'Unknown error');
+                    setLoading(false);
+                    return;
+                }
+
                 const data = await response.json();
+                
                 if (data.chatId) {
-                    router.push(`/deep-research?chatId=${data.chatId}`);
+                    // Route to deep-research page with chatId (which is the libId)
+                    router.push(`/deep-research/${data.chatId}`);
                 } else {
-                    console.error('Failed to start deep research');
+                    console.error('Failed to start deep research: No chatId in response', data);
+                    setLoading(false);
                 }
             } catch (error) {
                 console.error('Error starting deep research:', error);
-            } finally {
                 setLoading(false);
             }
         } else {
@@ -82,7 +91,7 @@ export default function InputBox() {
             ]).select();
             setLoading(false);
 
-            router.push('/search/'+libid)
+            router.push('/search/' + libid);
         }
     }
 

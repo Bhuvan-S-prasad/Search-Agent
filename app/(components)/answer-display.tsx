@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import DisplaySummary from "./display-summary";
 import SourceList from "./source-list";
 
@@ -25,14 +26,15 @@ interface AnswerDisplayProps {
 }
 
 function AnswerDisplay({ chat }: AnswerDisplayProps) {
-  
-
-
+  const stableChat = useMemo(() => chat, [chat?.id]);  
   return (
     <div>
       <div className="flex gap-2 flex-wrap mt-5 pb-8 mb-7">
-        <SourceList webResults={chat?.searchResult}/>
-        <DisplaySummary aiResponce={chat?.aiResponce} searchResult={chat?.searchResult}/>
+        <SourceList webResults={stableChat?.searchResult}/>
+        <DisplaySummary 
+          aiResponce={stableChat?.aiResponce ?? ""} 
+          searchResult={stableChat?.searchResult} 
+        />
       </div>
     </div>
   );
