@@ -1,5 +1,5 @@
 import { inngest } from "./client";
-import { supabase } from "@/services/supabase";
+import { supabaseAdmin as supabase } from "@/services/supabaseAdmin";
 
 // NEW IMPORTS (Deep Research)
 import { z } from "zod";
@@ -46,6 +46,8 @@ async function saveSourcesToChat(chatId: number, sources: any[]) {
 // Helper: save final report to BOTH Library and current chat
 // -----------------------------------------------------------
 async function saveFinalReport(libId: string, chatId: number, report: string) {
+    console.log(`[saveFinalReport] Saving for libId: ${libId}, chatId: ${chatId}`);
+
     // Save to current chat record
     const { error: chatError } = await supabase
         .from("chats")
@@ -54,21 +56,27 @@ async function saveFinalReport(libId: string, chatId: number, report: string) {
 
     if (chatError) {
         console.error("Error saving report to chat:", chatError);
+        throw new Error(`Failed to save to chat: ${chatError.message}`);
     }
 
     // Save to Library table
-    const { error: libError } = await supabase
+    console.log(`[saveFinalReport] Updating Library status to completed...`);
+    const { data, error: libError } = await supabase
         .from("Library")
         .update({
             deepResearchReport: report,
             deepResearchStatus: "completed",
             deepResearchProgress: "Research complete"
         })
-        .eq("libId", libId);
+        .eq("libId", libId)
+        .select();
 
     if (libError) {
         console.error("Error saving report to Library:", libError);
+        throw new Error(`Failed to save to Library: ${libError.message}`);
     }
+
+    console.log(`[saveFinalReport] Library update result:`, data);
 }
 
 // -----------------------------------------------------------
@@ -93,7 +101,7 @@ const googleSearch = tool(
             return { query, results };
         } catch (error) {
             console.error("Search error:", error);
-            return { query, results: [], error: error.message };
+            return { query, results: [], error: (error as any).message };
         }
     },
     {

@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useState, useEffect, useCallback, useRef } from "react";
-import ReactMarkdown from "react-markdown";
+import DeepResearchDisplaySummary from "./DeepResearchDisplaySummary";
 
 /* -----------------------------
    Chat Model (Deep Research)
@@ -34,6 +34,7 @@ interface Chat {
 interface Library {
   searchInput?: string;
   libId?: string;
+  userEmail?: string;
   deepResearchStatus?: "pending" | "researching" | "writing" | "completed";
   deepResearchProgress?: string | null;
   deepResearchReport?: string | null;
@@ -115,10 +116,9 @@ export default function DisplayResult({ searchInputRecord }: DisplayResultProps)
   }, [libId, scrollToLatest]);
 
   /* -------------------------------------
-     Start Deep Research (CORRECTED)
+     Start Deep Research
      - Pass existing libId for follow-up queries
      - API creates new chat record
-     - Poll Library table for status
   --------------------------------------*/
   const StartDeepResearch = useCallback(
     async (customInput?: string) => {
@@ -140,56 +140,18 @@ export default function DisplayResult({ searchInputRecord }: DisplayResultProps)
         });
 
         const chatId = resp.data?.chatId;
-        const libIdFromApi = resp.data?.libId;
 
         if (!chatId) {
           isProcessingRef.current = false;
           setLoadingState("idle");
           return;
-          setLoadingState("idle");
-          isProcessingRef.current = false;
         }
 
         // Immediately fetch to show the new chat
         await GetResearchRecords();
         setLoadingState("processing");
 
-        // Poll the LIBRARY table for status updates
-        const interval = setInterval(async () => {
-          try {
-            console.log("Polling for libId:", libIdFromApi);
-            const { data: library } = await supabase
-              .from("Library")
-              .select("*")
-              .eq("libId", libIdFromApi)
-              .single();
-
-            console.log("Polling status:", library?.deepResearchStatus);
-
-            if (library?.deepResearchStatus === "completed") {
-              console.log("Research completed, clearing interval");
-              clearInterval(interval);
-              activeIntervalsRef.current.delete(interval);
-              // Final fetch to get the completed data, including the aiResponce
-              await GetResearchRecords();
-              setLoadingState("idle");
-              setCurrentQuery("");
-              isProcessingRef.current = false;
-            } else {
-              // Refresh all chats to show progress updates while running
-              await GetResearchRecords();
-              setLoadingState("processing");
-            }
-          } catch (e) {
-            console.error("Polling error:", e);
-            clearInterval(interval);
-            activeIntervalsRef.current.delete(interval);
-            isProcessingRef.current = false;
-            setLoadingState("idle");
-          }
-        }, 1500);
-
-        activeIntervalsRef.current.add(interval);
+        // Polling is now handled by the useEffect hook
       } catch (err) {
         console.error("Start deep research error:", err);
         setLoadingState("idle");
@@ -257,6 +219,51 @@ export default function DisplayResult({ searchInputRecord }: DisplayResultProps)
   }, [libId, GetResearchRecords]);
 
   /* -------------------------------------
+     Persistent Polling for Status
+  --------------------------------------*/
+  useEffect(() => {
+    // Only poll if we have a libId and status is NOT completed
+    const shouldPoll =
+      libId &&
+      searchResult?.deepResearchStatus &&
+      searchResult.deepResearchStatus !== "completed";
+
+    if (!shouldPoll) return;
+
+    console.log("Starting persistent polling for:", libId);
+
+    const interval = setInterval(async () => {
+      try {
+        console.log("Polling...");
+        const { data: library } = await supabase
+          .from("Library")
+          .select("*")
+          .eq("libId", libId)
+          .single();
+
+        console.log("Polling status:", library?.deepResearchStatus);
+
+        if (library?.deepResearchStatus === "completed") {
+          console.log("Research completed (polling), refreshing...");
+          clearInterval(interval);
+          await GetResearchRecords();
+          setLoadingState("idle");
+          isProcessingRef.current = false;
+        } else {
+          // Optional: Update local state if progress changed
+          if (library?.deepResearchProgress !== searchResult?.deepResearchProgress) {
+            setSearchResult(prev => prev ? ({ ...prev, deepResearchProgress: library.deepResearchProgress }) : prev);
+          }
+        }
+      } catch (e) {
+        console.error("Polling error:", e);
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [libId, searchResult?.deepResearchStatus, searchResult?.deepResearchProgress, GetResearchRecords]);
+
+  /* -------------------------------------
      Clean up intervals
   --------------------------------------*/
   useEffect(() => {
@@ -309,7 +316,7 @@ export default function DisplayResult({ searchInputRecord }: DisplayResultProps)
 
       {/* Render chats (just like search feature) */}
       {searchResult?.chats?.map((chat: Chat, index: number) => {
-        const isLatest = index === searchResult.chats!.length - 1;
+        const isLatest = index === (searchResult.chats?.length || 0) - 1;
         const activeTab = getActiveTab(chat.id);
 
         return (
@@ -340,9 +347,10 @@ export default function DisplayResult({ searchInputRecord }: DisplayResultProps)
                   <ReportLoading />
                 ) : chat.aiResponce ? (
                   <div className="bg-white rounded-lg p-6 shadow-sm border">
-                    <ReactMarkdown className="prose max-w-none">
-                      {chat.aiResponce}
-                    </ReactMarkdown>
+                    <DeepResearchDisplaySummary
+                      aiResponse={chat.aiResponce}
+                      sources={chat.searchResult}
+                    />
                   </div>
                 ) : (
                   <div className="text-gray-600 p-6 bg-gray-50 rounded-lg">
@@ -368,11 +376,11 @@ export default function DisplayResult({ searchInputRecord }: DisplayResultProps)
                 </div>
               )}
 
-              {activeTab === "Sources" && <SourceListTab chat={chat} />}
-              {activeTab === "Images" && <ImageDisplay chat={chat} />}
+              {activeTab === "Sources" && <SourceListTab chat={chat as any} />}
+              {activeTab === "Images" && <ImageDisplay chat={chat as any} />}
             </div>
 
-            {index < searchResult.chats!.length - 1 && <hr className="my-8" />}
+            {index < (searchResult.chats?.length || 0) - 1 && <hr className="my-8" />}
           </div>
         );
       })}

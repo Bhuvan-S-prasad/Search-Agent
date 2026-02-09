@@ -97,8 +97,8 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
   const scrollToLatest = useCallback(() => {
     const targetRef = loadingState !== "idle" ? loadingDivRef : latestChatRef;
     if (targetRef.current) {
-      targetRef.current.scrollIntoView({ 
-        behavior: "smooth", 
+      targetRef.current.scrollIntoView({
+        behavior: "smooth",
         block: "start",
         inline: "nearest"
       });
@@ -112,24 +112,24 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
         .from("Library")
         .select("*,chats(*)")
         .eq("libId", libId)
-        .order('id', {foreignTable: 'chats', ascending: true })
+        .order('id', { foreignTable: 'chats', ascending: true })
 
       if (error) {
-        console.error("Error fetching library:", error);
+        console.error("Error fetching library:", JSON.stringify(error, null, 2));
         return;
       }
 
       if (Library && Library.length > 0) {
         const libval = Library[0];
         console.log("Updated library data:", libval);
-        
+
         // Check if new chat was added
         const newChatCount = libval.chats?.length || 0;
         const hadNewChat = newChatCount > previousChatCountRef.current;
-        
+
         setSearchResult(libval);
         previousChatCountRef.current = newChatCount;
-        
+
         // Scroll to new chat when it arrives
         if (hadNewChat) {
           setTimeout(() => scrollToLatest(), 100);
@@ -205,7 +205,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
 
         // Clear user input after successful search
         setUserInput("");
-        
+
         // Change state to generating - users can now see search results!
         setLoadingState("generating");
 
@@ -297,7 +297,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
   useEffect(() => {
     // Initialize previous chat count
     previousChatCountRef.current = searchInputRecord?.chats?.length || 0;
-    
+
     if (searchInputRecord?.chats?.length === 0) {
       GetSearchApiResult();
     } else {
@@ -326,7 +326,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
         <div className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-11/12 bg-size-[200%_100%]" style={{ animationDelay: '0.1s' }}></div>
         <div className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-10/12 bg-size-[200%_100%]" style={{ animationDelay: '0.2s' }}></div>
       </div>
-      
+
       <div className="space-y-3 mt-6">
         <div className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-full bg-size-[200%_100%]" style={{ animationDelay: '0.3s' }}></div>
         <div className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-9/12 bg-size-[200%_100%]" style={{ animationDelay: '0.4s' }}></div>
@@ -360,7 +360,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
         <Loader2 className="w-5 h-5 animate-spin text-gray-600" />
         <h2 className="font-bold text-3xl line-clamp-2">{currentQuery}</h2>
       </div>
-      
+
       <div className="flex items-center space-x-6 border-b pt-4 pb-2">
         {tabs.map(({ label, icon: Icon }) => (
           <div
@@ -389,22 +389,22 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
   );
 
   // Check if the latest chat is still generating
-  const isLatestChatGenerating = loadingState === "generating" && 
-    searchResult?.chats && 
-    searchResult.chats.length > 0 &&
-    !searchResult.chats[searchResult.chats.length - 1].aiResponce;
+  const isLatestChatGenerating = loadingState === "generating" &&
+    searchResult?.chats &&
+    (searchResult.chats?.length ?? 0) > 0 &&
+    !searchResult.chats?.[(searchResult.chats?.length ?? 0) - 1]?.aiResponce;
 
   return (
     <div className="mt-20 ml-27 mr-10 md:pl-10 md:pr-15 lg:pl-25 lg:pr-25 ">
       {/* Render existing chats */}
       {searchResult?.chats?.map((chat, index) => {
-        const isLatestChat = index === searchResult.chats.length - 1;
+        const isLatestChat = index === (searchResult.chats?.length ?? 0) - 1;
         const showGeneratingState = isLatestChat && isLatestChatGenerating;
         const chatActiveTab = getActiveTab(chat.id);
-        
+
         return (
-          <div 
-            key={chat.id || index} 
+          <div
+            key={chat.id || index}
             className="mt-7"
             ref={isLatestChat ? latestChatRef : null}
           >
@@ -416,11 +416,10 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
                 <button
                   key={label}
                   onClick={() => setActiveTabForChat(chat.id, label)}
-                  className={`flex items-center gap-1 relative text-sm font-medium ${
-                    chatActiveTab === label
-                      ? "text-black font-semibold"
-                      : "text-gray-500"
-                  }`}
+                  className={`flex items-center gap-1 relative text-sm font-medium ${chatActiveTab === label
+                    ? "text-black font-semibold"
+                    : "text-gray-500"
+                    }`}
                 >
                   <Icon className="w-5 h-5" />
                   <span>{label}</span>
@@ -462,7 +461,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
 
       {/* Show full page loader only during initial search */}
       {loadingState === "searching" && <SearchingLoader />}
-      
+
       <div className="bg-white w-full border-lg shadow-md p-3 px-5 flex justify-between fixed bottom-5 rounded-2xl max-w-md lg:max-w-xl xl:max-w-3xl">
         <input
           placeholder="ask anything"
