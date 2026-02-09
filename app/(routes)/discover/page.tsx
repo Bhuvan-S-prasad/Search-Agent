@@ -3,6 +3,7 @@
 import axios from "axios";
 import { DollarSign, Globe, Palette, Star, Tv, Cloud, TrendingUp, TrendingDown, Volleyball, TvIcon, Cpu } from "lucide-react";
 import { useEffect, useState } from "react";
+import React from "react";
 import Image from "next/image";
 
 interface NewsArticle {
@@ -50,7 +51,7 @@ const options: Option[] = [
   { title: "Finance", icon: DollarSign, query: "business finance" },
   { title: "Technology", icon: Cpu, query: "technology" },
   { title: "Sports", icon: Volleyball, query: "sports" },
-  { title: "Entertainment", icon: TvIcon, query: "entertainment"},
+  { title: "Entertainment", icon: TvIcon, query: "entertainment" },
   { title: "Politics", icon: Globe, query: "politics" },
 ];
 
@@ -75,7 +76,7 @@ function Discover() {
     setLoading(true);
     try {
       const currentOption = options.find(opt => opt.title === selectedOption);
-      
+
       const result = await axios.post("/api/gnews-api", {
         query: currentOption?.query,
         category: selectedOption.toLowerCase()
@@ -86,7 +87,7 @@ function Discover() {
         link: item.url,
         snippet: item.description,
         displayLink: item.source.name,
-        image: item.image, 
+        image: item.image,
         publishedAt: item.publishedAt,
       })) || [];
 
@@ -158,11 +159,10 @@ function Discover() {
               <button
                 key={index}
                 onClick={() => setSelectedOption(option.title)}
-                className={`flex items-center gap-2 px-3 lg:px-4 py-2 rounded-full hover:bg-sidebar-accent hover:text-slate-600 whitespace-nowrap ${
-                  selectedOption === option.title 
-                    ? "bg-primary text-primary-foreground border-primary" 
-                    : "bg-background text-foreground border-border hover:border-foreground/50"
-                }`}
+                className={`flex items-center gap-2 px-3 lg:px-4 py-2 rounded-full hover:bg-sidebar-accent hover:text-slate-600 whitespace-nowrap ${selectedOption === option.title
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background text-foreground border-border hover:border-foreground/50"
+                  }`}
               >
                 <option.icon className="w-4 h-4" />
                 <span className="text-sm font-medium">{option.title}</span>
@@ -339,7 +339,7 @@ function Discover() {
                   }
 
                   return acc;
-                }, [] as JSX.Element[])}
+                }, [] as React.ReactNode[])}
               </div>
             ) : (
               <div className="text-center py-20">

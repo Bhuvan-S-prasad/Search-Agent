@@ -41,19 +41,58 @@ export default function InputBox() {
 
     const onSearchQuery = async () => {
         setLoading(true);
-        const libid = uuidv4();
+        
+        if (searchType === 'DeepSearch') {
+            // For DeepSearch, create a library entry and start research
+            try {
+                const response = await fetch('/api/deep-research/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: userSearchInput,
+                        userId: user?.id || '',
+                        userEmail: user?.primaryEmailAddress?.emailAddress || '',
+                    }),
+                });
 
-        const result = await supabase.from('Library').insert([
-            {
-                searchInput: userSearchInput,
-                userEmail: user?.primaryEmailAddress?.emailAddress,
-                type: searchType,
-                libId: libid
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                    console.error('Failed to start deep research:', errorData.error || 'Unknown error');
+                    setLoading(false);
+                    return;
+                }
+
+                const data = await response.json();
+                
+                if (data.chatId) {
+                    // Route to deep-research page with chatId (which is the libId)
+                    router.push(`/deep-research/${data.chatId}`);
+                } else {
+                    console.error('Failed to start deep research: No chatId in response', data);
+                    setLoading(false);
+                }
+            } catch (error) {
+                console.error('Error starting deep research:', error);
+                setLoading(false);
             }
-        ]).select();
-        setLoading(false);
+        } else {
+            // Regular search flow
+            const libid = uuidv4();
 
-        router.push('/search/'+libid)
+            const result = await supabase.from('Library').insert([
+                {
+                    searchInput: userSearchInput,
+                    userEmail: user?.primaryEmailAddress?.emailAddress,
+                    type: searchType,
+                    libId: libid
+                }
+            ]).select();
+            setLoading(false);
+
+            router.push('/search/' + libid);
+        }
     }
 
     const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {

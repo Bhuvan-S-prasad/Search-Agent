@@ -32,16 +32,24 @@ const MenuOptions = [
   }
 ];
 
+
+interface LibraryItem {
+  id: number;
+  libId: string;
+  searchInput: string;
+  userEmail: string;
+}
+
 export default function AppSidebar() {
   const path = usePathname();
   const router = useRouter();
   const { user } = useUser();
   const [showLibrary, setShowLibrary] = useState(false);
-  const [libraryHistory, setLibraryHistory] = useState([]);
+  const [libraryHistory, setLibraryHistory] = useState<LibraryItem[]>([]);
 
   const finalMenuOptions = user
-  ? MenuOptions.filter((menu) => menu.title !== "SignIn")
-  : MenuOptions;
+    ? MenuOptions.filter((menu) => menu.title !== "SignIn")
+    : MenuOptions;
 
   const GetLibraryHistory = async () => {
     const { data: Library, error } = await supabase
@@ -61,7 +69,7 @@ export default function AppSidebar() {
     }
   }, [user]);
 
-  const handleLibraryClick = (libId) => {
+  const handleLibraryClick = (libId: string) => {
     router.push('/search/' + libId);
     setShowLibrary(false);
   };
@@ -70,12 +78,12 @@ export default function AppSidebar() {
     <>
       <div className="fixed left-0 top-0 h-screen w-20 bg-accent border-r border-border flex flex-col items-center py-4 z-50">
         <div className="mb-5 mt-3 ml-2 mr-2">
-          <Image src={'/logo-navbar.png'} alt="logo" width={150} height={150}/>
+          <Image src={'/logo-navbar.png'} alt="logo" width={150} height={150} />
         </div>
 
         <button className="flex flex-col items-center justify-center gap-1 py-6 px-2 mx-2 hover:bg-accent/70 text-muted-foreground rounded-lg hover:text-foreground transition-colors" onClick={() => router.push('/')}>
-            <Plus className="h-6 w-6" />
-            <span className="text-xs font-medium">New</span>
+          <Plus className="h-6 w-6" />
+          <span className="text-xs font-medium">New</span>
         </button>
 
         {/* Menu Items */}
@@ -89,11 +97,10 @@ export default function AppSidebar() {
             >
               <a
                 href={menu.path}
-                className={`flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-lg mx-2 transition-colors ${
-                  path === menu.path
-                    ? "bg-primary/10 text-primary"
-                    : "hover:bg-accent/70 text-muted-foreground hover:text-foreground"
-                }`}
+                className={`flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-lg mx-2 transition-colors ${path === menu.path
+                  ? "bg-primary/10 text-primary"
+                  : "hover:bg-accent/70 text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 <menu.icon className="h-6 w-6" />
                 <span className="text-xs font-medium">{menu.title}</span>
@@ -101,7 +108,7 @@ export default function AppSidebar() {
             </div>
           ))}
 
-          
+
         </div>
 
         {/* Footer */}

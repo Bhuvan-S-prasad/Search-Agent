@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import AppSidebar from "./(components)/app-sidebar";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
-import Provider  from "./provider"
+import Provider from "./provider"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,12 +29,9 @@ export default function RootLayout({
       <html lang="en">
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased m-0 p-0`} suppressHydrationWarning>
-          <AppSidebar />
-          <main>
-            <Provider>
-              {children}
-            </Provider>
-          </main>
+          <Provider>
+            {children}
+          </Provider>
         </body>
       </html>
     </ClerkProvider>
