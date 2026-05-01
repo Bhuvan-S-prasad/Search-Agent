@@ -474,7 +474,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
           {loadingState !== "idle" ? (
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
-            userInput?.length > 0 && <SendHorizonalIcon />
+            <SendHorizonalIcon />
           )}
         </Button>
       </div>
