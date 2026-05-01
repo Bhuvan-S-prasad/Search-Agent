@@ -14,9 +14,9 @@ interface FormattedSearchItem {
 interface Chat {
   id: number;
   libId: string;
-  searchResult: FormattedSearchItem[];
+  searchResult?: FormattedSearchItem[];
   userSearchInput: string;
-  aiResponce?: string;
+  aiResponce?: string | null;
 }
 
 interface AnswerDisplayProps {
@@ -35,7 +35,8 @@ function SourceListTab({ chat }: AnswerDisplayProps) {
   return (
     <div className="mt-5 space-y-3">
       {chat.searchResult.map((item, index) => {
-        const domain = item.displayLink?.replace(/^www\./, "") || "Unknown source";
+        const domain =
+          item.displayLink?.replace(/^www\./, "") || "Unknown source";
         const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
 
         return (

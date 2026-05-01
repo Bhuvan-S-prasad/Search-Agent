@@ -17,7 +17,7 @@ function SearchQueryResult() {
 
     useEffect(() => {
         const GetSearchQueryRecord = async () => {
-            const { data: Library, error } = await supabase
+            const { data: Library } = await supabase
             .from('Library')
             .select('*,chats(*)')
             .eq('libId', libId);
