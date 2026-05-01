@@ -1,9 +1,10 @@
 import { Inngest, EventSchemas } from "inngest";
-import type { LlmModelEvent } from "./events";
+import type { LlmModelEvent, ChatModelEvent } from "./events";
 
 // Define all event types for type safety
 type Events = {
     "llm-model": LlmModelEvent;
+    "chat-model": ChatModelEvent;
 };
 
 // Create a client to send and receive events

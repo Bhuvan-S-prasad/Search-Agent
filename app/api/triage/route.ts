@@ -27,7 +27,7 @@ Respond with ONLY a JSON object in this exact format, nothing else:
 {"intent": "chat"} or {"intent": "search"}`;
 
         const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
             {
                 method: "POST",
                 headers: {
