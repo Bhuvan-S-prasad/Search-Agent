@@ -39,7 +39,7 @@ function ImageDisplay({ chat }: AnswerDisplayProps) {
         className="
           columns-2 sm:columns-3 lg:columns-4
           gap-3
-          [column-fill:_balance]
+          [column-fill:balance]
         "
       >
         {chat.searchResult.map((item, index) => {

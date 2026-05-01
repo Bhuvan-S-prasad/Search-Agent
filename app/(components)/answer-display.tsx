@@ -16,6 +16,7 @@ interface Chat {
   searchResult: FormattedSearchItem[];
   userSearchInput: string;
   aiResponce?: string;
+  intent?: string;
 }
 interface AnswerDisplayProps {
   chat?: Chat;
@@ -25,7 +26,7 @@ function AnswerDisplay({ chat }: AnswerDisplayProps) {
   return (
     <div>
       <div className="flex gap-2 flex-wrap mt-5 pb-8 mb-7">
-        <SourceList webResults={chat?.searchResult} />
+        {chat?.intent !== "chat" && <SourceList webResults={chat?.searchResult} />}
         <DisplaySummary
           aiResponce={chat?.aiResponce ?? ""}
           searchResult={chat?.searchResult}
