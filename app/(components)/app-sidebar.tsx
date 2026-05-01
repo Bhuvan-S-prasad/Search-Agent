@@ -1,7 +1,12 @@
-"use client"
+"use client";
 
 import { Button } from "@/components/ui/button";
-import { SignOutButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
+import {
+  SignOutButton,
+  SignUpButton,
+  UserButton,
+  useUser,
+} from "@clerk/nextjs";
 import { Home, Compass, BookOpen, LogIn, Plus, DollarSign } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -13,25 +18,24 @@ const MenuOptions = [
     title: "Home",
     icon: Home,
     path: "/",
-    hasLibrary: true
+    hasLibrary: true,
   },
   {
     title: "Discover",
     icon: Compass,
-    path: "/discover"
+    path: "/discover",
   },
   {
     title: "finance",
     icon: DollarSign,
-    path: "/finance"
+    path: "/finance",
   },
   {
     title: "SignIn",
     icon: LogIn,
-    path: "/sign-in"
-  }
+    path: "/sign-in",
+  },
 ];
-
 
 interface LibraryItem {
   id: number;
@@ -51,26 +55,26 @@ export default function AppSidebar() {
     ? MenuOptions.filter((menu) => menu.title !== "SignIn")
     : MenuOptions;
 
-  const GetLibraryHistory = async () => {
-    const { data: Library, error } = await supabase
-      .from('Library')
-      .select('*')
-      .eq('userEmail', user?.primaryEmailAddress?.emailAddress)
-      .order('id', { ascending: false });
-
-    if (Library) {
-      setLibraryHistory(Library);
-    }
-  };
-
   useEffect(() => {
+    const GetLibraryHistory = async () => {
+      const { data: Library } = await supabase
+        .from("Library")
+        .select("*")
+        .eq("userEmail", user?.primaryEmailAddress?.emailAddress)
+        .order("id", { ascending: false });
+
+      if (Library) {
+        setLibraryHistory(Library);
+      }
+    };
+
     if (user) {
       GetLibraryHistory();
     }
   }, [user]);
 
   const handleLibraryClick = (libId: string) => {
-    router.push('/search/' + libId);
+    router.push("/search/" + libId);
     setShowLibrary(false);
   };
 
@@ -78,10 +82,13 @@ export default function AppSidebar() {
     <>
       <div className="fixed left-0 top-0 h-screen w-20 bg-accent border-r border-border flex flex-col items-center py-4 z-50">
         <div className="mb-5 mt-3 ml-2 mr-2">
-          <Image src={'/logo-navbar.png'} alt="logo" width={150} height={150} />
+          <Image src={"/logo-navbar.png"} alt="logo" width={150} height={150} />
         </div>
 
-        <button className="flex flex-col items-center justify-center gap-1 py-6 px-2 mx-2 hover:bg-accent/70 text-muted-foreground rounded-lg hover:text-foreground transition-colors" onClick={() => router.push('/')}>
+        <button
+          className="flex flex-col items-center justify-center gap-1 py-6 px-2 mx-2 hover:bg-accent/70 text-muted-foreground rounded-lg hover:text-foreground transition-colors"
+          onClick={() => router.push("/")}
+        >
           <Plus className="h-6 w-6" />
           <span className="text-xs font-medium">New</span>
         </button>
@@ -97,18 +104,17 @@ export default function AppSidebar() {
             >
               <a
                 href={menu.path}
-                className={`flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-lg mx-2 transition-colors ${path === menu.path
-                  ? "bg-primary/10 text-primary"
-                  : "hover:bg-accent/70 text-muted-foreground hover:text-foreground"
-                  }`}
+                className={`flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-lg mx-2 transition-colors ${
+                  path === menu.path
+                    ? "bg-primary/10 text-primary"
+                    : "hover:bg-accent/70 text-muted-foreground hover:text-foreground"
+                }`}
               >
                 <menu.icon className="h-6 w-6" />
                 <span className="text-xs font-medium">{menu.title}</span>
               </a>
             </div>
           ))}
-
-
         </div>
 
         {/* Footer */}
@@ -145,7 +151,11 @@ export default function AppSidebar() {
                 <BookOpen className="h-5 w-5" />
                 Library
               </h2>
-              <Button size="sm" variant="ghost" onClick={() => router.push('/library')}>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => router.push("/library")}
+              >
                 View All
               </Button>
             </div>
@@ -158,7 +168,9 @@ export default function AppSidebar() {
                     className="py-1.5 px-3 hover:bg-accent cursor-pointer transition-colors"
                     onClick={() => handleLibraryClick(item.libId)}
                   >
-                    <h3 className="font-medium text-sm truncate">{item.searchInput}</h3>
+                    <h3 className="font-medium text-sm truncate">
+                      {item.searchInput}
+                    </h3>
                   </div>
                 ))
               ) : (

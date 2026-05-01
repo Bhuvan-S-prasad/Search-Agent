@@ -8,7 +8,6 @@ import {
   LucideImage,
   LucideList,
   LucideSparkles,
-  LucideVideo,
   SendHorizonalIcon,
   Loader2,
 } from "lucide-react";
@@ -65,7 +64,6 @@ const tabs: Tab[] = [
 type LoadingState = "idle" | "searching" | "generating";
 
 function DisplayResult({ searchInputRecord }: DisplayResultProps) {
-  // Change: Track active tab per chat using chat ID as key
   const [activeTabs, setActiveTabs] = useState<Record<number, string>>({});
   const [searchResult, setSearchResult] = useState(searchInputRecord);
   const [userInput, setUserInput] = useState("");
@@ -141,8 +139,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
   }, [libId, scrollToLatest]);
 
   // Main function to get search results and trigger AI response
-  const GetSearchApiResult = useCallback(
-    async (customInput?: string) => {
+  const GetSearchApiResult = async (customInput?: string) => {
       // Determine which search query to use
       const searchQuery = customInput || userInput || searchInputRecord?.searchInput;
 
@@ -222,9 +219,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
       } finally {
         isSearchingRef.current = false;
       }
-    },
-    [userInput, searchInputRecord, libId, GetSearchRecords, scrollToLatest]
-  );
+    };
 
   // Generate AI response and poll for completion
   const GenerateAIResp = async (
@@ -308,12 +303,13 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
 
   // Cleanup intervals on unmount
   useEffect(() => {
+    const activeIntervals = activeIntervalsRef.current;
     return () => {
       // Clear all active intervals when component unmounts
-      activeIntervalsRef.current.forEach((interval) => {
+      activeIntervals.forEach((interval) => {
         clearInterval(interval);
       });
-      activeIntervalsRef.current.clear();
+      activeIntervals.clear();
     };
   }, []);
 

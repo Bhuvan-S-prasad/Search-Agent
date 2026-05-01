@@ -49,7 +49,7 @@
     "date-fns": "^4.1.0",
     "deepagents": "^1.1.0",
     "embla-carousel-react": "^8.6.0",
-    "inngest": "^3.45.0",
+    "inngest": "^3.54.2",
     "input-otp": "^1.4.2",
     "langchain": "^1.0.4",
     "lucide-react": "^0.552.0",

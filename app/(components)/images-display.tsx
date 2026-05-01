@@ -14,9 +14,9 @@ interface FormattedSearchItem {
 interface Chat {
   id: number;
   libId: string;
-  searchResult: FormattedSearchItem[];
+  searchResult?: FormattedSearchItem[];
   userSearchInput: string;
-  aiResponce?: string;
+  aiResponce?: string | null;
 }
 
 interface AnswerDisplayProps {
@@ -45,9 +45,7 @@ function ImageDisplay({ chat }: AnswerDisplayProps) {
         {chat.searchResult.map((item, index) => {
           const imageSrc =
             item.thumbnail ||
-            (item.url.includes("googleusercontent")
-              ? item.url
-              : item.img) ||
+            (item.url.includes("googleusercontent") ? item.url : item.img) ||
             "/placeholder.png";
 
           return (
