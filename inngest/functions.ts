@@ -206,3 +206,69 @@ Remember: Use inline citations like [1], [2], [3] immediately after statements. 
         return { success: true, data: saveToDb };
     }
 );
+
+export const chatModel = inngest.createFunction(
+    {
+        id: "chat-model",
+    },
+    { event: "chat-model" },
+    async ({ event, step }) => {
+        const systemPrompt = `
+You are NOMI, a friendly, intelligent, and helpful AI assistant. 
+The user has sent a conversational message or greeting.
+Respond naturally and conversationally. Be warm, concise, and helpful. 
+Do not use citations, reference search results, or act like you are answering a research query. 
+Just chat with the user as a helpful companion.
+`;
+
+        // Gemini API call for chat
+        const aiResp = await step.run("generate-chat-response", async () => {
+            const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        contents: [
+                            {
+                                role: "user",
+                                parts: [
+                                    {
+                                        text: systemPrompt + "\\n\\nUser message: " + event.data.searchInput,
+                                    },
+                                ],
+                            },
+                        ],
+                        generationConfig: {
+                            temperature: 0.7,
+                            maxOutputTokens: 1024,
+                        },
+                    }),
+                }
+            );
+
+            return await response.json();
+        });
+
+        // Save AI response to Supabase
+        const saveToDb = await step.run("saveToDb", async () => {
+            const firstPart = aiResp?.candidates?.[0]?.content?.parts?.[0];
+            const aiText = firstPart && "text" in firstPart ? firstPart.text : undefined;
+
+            const { data, error } = await supabase
+                .from("chats")
+                .update({
+                    aiResponce: aiText
+                })
+                .eq("id", event.data.recordId)
+                .select();
+
+            if (error) throw error;
+            return data;
+        });
+
+        return { success: true, data: saveToDb };
+    }
+);
