@@ -20,6 +20,7 @@ interface Chat {
   searchResult: FormattedSearchItem[];
   userSearchInput: string;
   aiResponce?: string;
+  intent?: string;
 }
 
 interface DisplayResultProps {
@@ -61,7 +62,7 @@ const tabs: Tab[] = [
   { label: "Sources", icon: LucideList },
 ];
 
-type LoadingState = "idle" | "searching" | "generating";
+type LoadingState = "idle" | "triaging" | "planning" | "searching" | "generating";
 
 function DisplayResult({ searchInputRecord }: DisplayResultProps) {
   const [activeTabs, setActiveTabs] = useState<Record<number, string>>({});
@@ -149,69 +150,112 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
       }
 
       isSearchingRef.current = true;
-      setLoadingState("searching");
+      setLoadingState("triaging");
       setCurrentQuery(searchQuery);
-      console.log("Starting search for:", searchQuery);
+      console.log("Starting triage for:", searchQuery);
 
       // Scroll to loading div immediately
       setTimeout(() => scrollToLatest(), 100);
 
       try {
-        // Get search results from Google API
-        const result = await axios.post("/api/google-search-api", {
-          searchInput: searchQuery,
-          searchType: searchInputRecord?.type ?? "Search",
-        });
+        // Step 1: Triage the query intent
+        const triageRes = await axios.post("/api/triage", { query: searchQuery });
+        const intent = triageRes.data?.intent || "search";
+        console.log("Intent classified as:", intent);
 
-        const searchResp = result.data;
+        if (intent === "chat") {
+          // Chat Flow: Skip search, insert empty results
+          const { data, error } = await supabase
+            .from("chats")
+            .insert([
+              {
+                libId: libId,
+                searchResult: [],
+                userSearchInput: searchQuery,
+                intent: "chat"
+              },
+            ])
+            .select();
 
-        // Format the search results
-        const formattedSearchResp: FormattedSearchItem[] =
-          searchResp?.items?.map((item: SearchItem) => ({
-            title: item?.title || "",
-            description: item?.snippet || "",
-            displayLink: item?.displayLink || "",
-            img:
-              item?.pagemap?.cse_image?.[0]?.src ||
-              item?.pagemap?.cse_thumbnail?.[0]?.src ||
-              `https://www.google.com/s2/favicons?domain=${item?.displayLink}&sz=64`,
-            url: item?.link || "",
-            thumbnail:
-              item?.pagemap?.cse_thumbnail?.[0]?.src ||
-              `https://www.google.com/s2/favicons?domain=${item?.displayLink}&sz=64`,
-          })) || [];
+          if (error) {
+            console.error("Error inserting chat:", error);
+            isSearchingRef.current = false;
+            setLoadingState("idle");
+            return;
+          }
 
-        // Insert search results into Supabase chats table
-        const { data, error } = await supabase
-          .from("chats")
-          .insert([
-            {
-              libId: libId,
-              searchResult: formattedSearchResp,
-              userSearchInput: searchQuery,
-            },
-          ])
-          .select();
+          setUserInput("");
+          setLoadingState("generating");
+          await GetSearchRecords();
 
-        if (error) {
-          console.error("Error inserting chat:", error);
-          isSearchingRef.current = false;
-          setLoadingState("idle");
-          return;
-        }
+          if (data && data[0]?.id) {
+            await GenerateAIResp([], data[0].id, searchQuery, "chat");
+          }
+        } else {
+          // Search Flow: Plan queries and search
+          setLoadingState("planning");
+          const plannerRes = await axios.post("/api/query-planner", { query: searchQuery });
+          const searchQueries = plannerRes.data?.queries || [searchQuery];
+          console.log("Planned queries:", searchQueries);
 
-        // Clear user input after successful search
-        setUserInput("");
+          setLoadingState("searching");
+          // Get search results from Google API (parallel)
+          const result = await axios.post("/api/google-search-api", {
+            searchInputs: searchQueries,
+            searchType: searchInputRecord?.type ?? "Search",
+          });
 
-        // Change state to generating - users can now see search results!
-        setLoadingState("generating");
+          const searchResp = result.data;
 
-        // Refresh the UI with the new chat record (this shows Sources/Images/Videos tabs)
-        await GetSearchRecords();
+          // Format the search results
+          const formattedSearchResp: FormattedSearchItem[] =
+            searchResp?.items?.map((item: SearchItem) => ({
+              title: item?.title || "",
+              description: item?.snippet || "",
+              displayLink: item?.displayLink || "",
+              img:
+                item?.pagemap?.cse_image?.[0]?.src ||
+                item?.pagemap?.cse_thumbnail?.[0]?.src ||
+                `https://www.google.com/s2/favicons?domain=${item?.displayLink}&sz=64`,
+              url: item?.link || "",
+              thumbnail:
+                item?.pagemap?.cse_thumbnail?.[0]?.src ||
+                `https://www.google.com/s2/favicons?domain=${item?.displayLink}&sz=64`,
+            })) || [];
 
-        // Generate AI response asynchronously (Answer tab will show loading)
-        if (data && data[0]?.id) {
-          await GenerateAIResp(formattedSearchResp, data[0].id, searchQuery);
+          // Insert search results into Supabase chats table
+          const { data, error } = await supabase
+            .from("chats")
+            .insert([
+              {
+                libId: libId,
+                searchResult: formattedSearchResp,
+                userSearchInput: searchQuery,
+                intent: "search"
+              },
+            ])
+            .select();
+
+          if (error) {
+            console.error("Error inserting chat:", error);
+            isSearchingRef.current = false;
+            setLoadingState("idle");
+            return;
+          }
+
+          // Clear user input after successful search
+          setUserInput("");
+
+          // Change state to generating - users can now see search results!
+          setLoadingState("generating");
+
+          // Refresh the UI with the new chat record (this shows Sources/Images/Videos tabs)
+          await GetSearchRecords();
+
+          // Generate AI response asynchronously (Answer tab will show loading)
+          if (data && data[0]?.id) {
+            await GenerateAIResp(formattedSearchResp, data[0].id, searchQuery, "search");
+          }
         }
       } catch (error) {
         console.error("Error in GetSearchApiResult:", error);
@@ -225,13 +269,15 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
   const GenerateAIResp = async (
     formattedSearchResp: FormattedSearchItem[],
     recordId: number,
-    searchQuery: string
+    searchQuery: string,
+    intent: string
   ) => {
     try {
       const result = await axios.post("/api/llm-model", {
         searchInput: searchQuery,
         searchResult: formattedSearchResp,
         recordId: recordId,
+        intent: intent
       });
 
       const runId = result.data;
@@ -369,7 +415,10 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
         ))}
         <div className="ml-auto text-sm text-gray-600 font-medium flex items-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin" />
-          Searching...
+          {loadingState === "triaging" && "Understanding intent..."}
+          {loadingState === "planning" && "Planning search queries..."}
+          {loadingState === "searching" && "Searching the web..."}
+          {loadingState === "generating" && "Generating answer..."}
         </div>
       </div>
 
@@ -408,7 +457,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
               {chat.userSearchInput || searchResult?.searchInput}
             </h2>
             <div className="flex items-center space-x-6 border-b pt-4 pb-2">
-              {tabs.map(({ label, icon: Icon }) => (
+              {chat.intent !== "chat" && tabs.map(({ label, icon: Icon }) => (
                 <button
                   key={label}
                   onClick={() => setActiveTabForChat(chat.id, label)}
@@ -424,13 +473,22 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
                   )}
                 </button>
               ))}
+              
+              {chat.intent === "chat" && (
+                <div className="flex items-center gap-1 relative text-sm font-medium text-black font-semibold">
+                  <LucideSparkles className="w-5 h-5" />
+                  <span>Chat</span>
+                  <span className="absolute -bottom-2 left-0 w-full h-0.5 bg-black rounded"></span>
+                </div>
+              )}
+
               {showGeneratingState && (
                 <div className="ml-auto text-sm text-blue-600 font-medium flex items-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Generating answer...
+                  Generating response...
                 </div>
               )}
-              {!showGeneratingState && (
+              {!showGeneratingState && chat.intent !== "chat" && (
                 <div className="ml-auto text-sm text-gray-500">
                   1 task <span className="ml-1"> -- </span>
                 </div>
@@ -456,7 +514,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
       })}
 
       {/* Show full page loader only during initial search */}
-      {loadingState === "searching" && <SearchingLoader />}
+      {["triaging", "planning", "searching"].includes(loadingState) && <SearchingLoader />}
 
       <div className="bg-white w-full border-lg shadow-md p-3 px-5 flex justify-between fixed bottom-5 rounded-2xl max-w-md lg:max-w-xl xl:max-w-3xl">
         <input
