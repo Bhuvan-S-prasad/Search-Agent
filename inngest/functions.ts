@@ -1,6 +1,7 @@
 import { inngest } from "./client";
 import { supabaseAdmin as supabase } from "@/services/supabaseAdmin";
 import { LLM_MODEL_EVENT, type SearchResultItem } from "./events";
+import { callOpenRouter } from "@/lib/openrouter";
 
 
 // LLM function for search (keeping this as is)
@@ -66,7 +67,7 @@ Code Snippets:
 Use markdown code blocks with language identifiers.
 
 Mathematical Expressions:
-Use LaTeX inside \\( \\) for inline and \\[ \\] for block formulas.
+Use LaTeX inside \\\\( \\\\) for inline and \\\\[ \\\\] for block formulas.
 Never use $ or $$.
 
 Quotations:
@@ -153,43 +154,20 @@ Content: ${result.content}
 Remember: Use inline citations like [1], [2], [3] immediately after statements. No reference list at the end.
     `;
 
-        // Gemini API call
+        // OpenRouter API call
         const aiResp = await step.run("generate-ai-llm-call", async () => {
-            const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        contents: [
-                            {
-                                role: "user",
-                                parts: [
-                                    {
-                                        text: systemPrompt,
-                                    },
-                                ],
-                            },
-                        ],
-                        generationConfig: {
-                            temperature: 0.7,
-                            topK: 40,
-                            topP: 0.95,
-                            maxOutputTokens: 2048,
-                        },
-                    }),
-                }
-            );
-
-            return await response.json();
+            const result = await callOpenRouter({
+                model: event.data.model,
+                messages: [{ role: "user", content: systemPrompt }],
+                temperature: 0.7,
+                max_tokens: 2048,
+            });
+            return result;
         });
 
         // Save AI response to Supabase (keeping original schema)
         const saveToDb = await step.run("saveToDb", async () => {
-            const firstPart = aiResp?.candidates?.[0]?.content?.parts?.[0];
-            const aiText = firstPart && "text" in firstPart ? firstPart.text : undefined;
+            const aiText = aiResp?.content || undefined;
 
             const { data, error } = await supabase
                 .from("chats")
@@ -221,41 +199,23 @@ Do not use citations, reference search results, or act like you are answering a 
 Just chat with the user as a helpful companion.
 `;
 
-        // Gemini API call for chat
+        // OpenRouter API call for chat
         const aiResp = await step.run("generate-chat-response", async () => {
-            const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        contents: [
-                            {
-                                role: "user",
-                                parts: [
-                                    {
-                                        text: systemPrompt + "\\n\\nUser message: " + event.data.searchInput,
-                                    },
-                                ],
-                            },
-                        ],
-                        generationConfig: {
-                            temperature: 0.7,
-                            maxOutputTokens: 1024,
-                        },
-                    }),
-                }
-            );
-
-            return await response.json();
+            const result = await callOpenRouter({
+                model: event.data.model,
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: event.data.searchInput },
+                ],
+                temperature: 0.7,
+                max_tokens: 1024,
+            });
+            return result;
         });
 
         // Save AI response to Supabase
         const saveToDb = await step.run("saveToDb", async () => {
-            const firstPart = aiResp?.candidates?.[0]?.content?.parts?.[0];
-            const aiText = firstPart && "text" in firstPart ? firstPart.text : undefined;
+            const aiText = aiResp?.content || undefined;
 
             const { data, error } = await supabase
                 .from("chats")

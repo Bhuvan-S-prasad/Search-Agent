@@ -11,8 +11,16 @@ import {
   SendHorizonalIcon,
   Loader2,
 } from "lucide-react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useState, useEffect, useCallback, useRef } from "react";
+import { AIModelsOptions, DEFAULT_MODEL } from "@/services/Shared";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Chat {
   id: number;
@@ -77,6 +85,9 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
   const previousChatCountRef = useRef(0);
 
   const params = useParams();
+  const searchParams = useSearchParams();
+  const initialModel = searchParams?.get("model") || DEFAULT_MODEL;
+  const [selectedModel, setSelectedModel] = useState<string>(initialModel);
   const libId = params?.libId as string;
 
   // Helper function to get active tab for a specific chat
@@ -159,7 +170,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
 
       try {
         // Step 1: Triage the query intent
-        const triageRes = await axios.post("/api/triage", { query: searchQuery });
+        const triageRes = await axios.post("/api/triage", { query: searchQuery, model: selectedModel });
         const intent = triageRes.data?.intent || "search";
         console.log("Intent classified as:", intent);
 
@@ -194,7 +205,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
         } else {
           // Search Flow: Plan queries and search
           setLoadingState("planning");
-          const plannerRes = await axios.post("/api/query-planner", { query: searchQuery });
+          const plannerRes = await axios.post("/api/query-planner", { query: searchQuery, model: selectedModel });
           const searchQueries = plannerRes.data?.queries || [searchQuery];
           console.log("Planned queries:", searchQueries);
 
@@ -277,7 +288,8 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
         searchInput: searchQuery,
         searchResult: formattedSearchResp,
         recordId: recordId,
-        intent: intent
+        intent: intent,
+        model: selectedModel
       });
 
       const runId = result.data;
@@ -525,16 +537,30 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
           onKeyPress={handleKeyPress}
           disabled={loadingState !== "idle"}
         />
-        <Button
-          onClick={handleSearch}
-          disabled={!userInput.trim() || loadingState !== "idle"}
-        >
-          {loadingState !== "idle" ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : (
-            <SendHorizonalIcon />
-          )}
-        </Button>
+        <div className="flex gap-2 items-center">
+          <Select value={selectedModel} onValueChange={setSelectedModel}>
+            <SelectTrigger className="w-[140px] h-9 md:w-[180px]">
+              <SelectValue placeholder="Select Model" />
+            </SelectTrigger>
+            <SelectContent>
+              {AIModelsOptions.map((model) => (
+                <SelectItem key={model.ModelApi} value={model.ModelApi}>
+                  {model.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            onClick={handleSearch}
+            disabled={!userInput.trim() || loadingState !== "idle"}
+          >
+            {loadingState !== "idle" ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <SendHorizonalIcon />
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -1,32 +1,10 @@
-export const AIModelsOptions = [
-    {
-        id:1,
-        name: "GPT-5",
-        description: "The latest and most advanced model from OpenAI.",
-        ModelApi: ""
+import { FREE_MODELS, DEFAULT_MODEL, type OpenRouterModel } from "@/lib/openrouter";
 
-    },
-    {
-        id:2,
-        name: "DeepSeek",
-        description: "An advanced model optimized for deep search tasks.",
-        ModelApi: ""
+export const AIModelsOptions = FREE_MODELS.map((model: OpenRouterModel, index: number) => ({
+    id: index + 1,
+    name: model.name,
+    description: model.description,
+    ModelApi: model.id,
+}));
 
-    },
-    {
-        id:3,
-        name: "Grok 4",
-        description: "AI model by xAI designed for versatile applications.",
-        ModelApi: ""
-
-    },
-    {
-        id:4,
-        name: "Gemini 2.5 Flash",
-        description: "Google's cutting-edge language model with enhanced capabilities.",
-        ModelApi: ""
-
-    },
-
-]
-
+export { DEFAULT_MODEL };

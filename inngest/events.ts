@@ -12,6 +12,7 @@ export type LlmModelEventData = {
     searchInput: string;
     searchResult: SearchResultItem[];
     recordId: number;
+    model?: string;
 };
 
 // Full event type for Inngest v3 EventSchemas
@@ -24,6 +25,7 @@ export type LlmModelEvent = {
 export type ChatModelEventData = {
     searchInput: string;
     recordId: number;
+    model?: string;
 };
 
 // Full event type for Inngest v3 EventSchemas

@@ -9,6 +9,14 @@ import { useUser } from "@clerk/nextjs";
 import { supabase } from "@/services/supabase";
 import { v4 as uuidv4 } from "uuid";
 import { useRouter } from "next/navigation";
+import { AIModelsOptions, DEFAULT_MODEL } from "@/services/Shared";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function InputBox() {
   const [userSearchInput, setUserSearchInput] = useState<string>("");
@@ -17,6 +25,7 @@ export default function InputBox() {
     "Search",
   );
   const [loading, setLoading] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_MODEL);
   const router = useRouter();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -98,7 +107,7 @@ export default function InputBox() {
         return;
       }
 
-      router.push("/search/" + libid);
+      router.push(`/search/${libid}?model=${encodeURIComponent(selectedModel)}`);
     }
   };
 
@@ -161,7 +170,19 @@ export default function InputBox() {
             </button>
           </div>
 
-          <div className="flex gap-0.5 items-center">
+          <div className="flex gap-2 items-center">
+            <Select value={selectedModel} onValueChange={setSelectedModel}>
+              <SelectTrigger className="w-[180px] h-9">
+                <SelectValue placeholder="Select Model" />
+              </SelectTrigger>
+              <SelectContent>
+                {AIModelsOptions.map((model) => (
+                  <SelectItem key={model.ModelApi} value={model.ModelApi}>
+                    {model.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button
               onClick={() => {
                 if (userSearchInput.trim()) {

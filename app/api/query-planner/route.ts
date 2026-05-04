@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { callOpenRouter, DEFAULT_MODEL } from "@/lib/openrouter";
 
 /**
- * Query Planner API — Uses Gemini to decompose a user query into
+ * Query Planner API — Uses OpenRouter to decompose a user query into
  * 1–5 optimized Google search queries for parallel execution.
  */
 export async function POST(req: NextRequest) {
     try {
-        const { query } = await req.json();
+        const { query, model } = await req.json();
 
         if (!query || typeof query !== "string") {
             return NextResponse.json(
@@ -31,39 +32,16 @@ User question: "${query.replace(/"/g, '\\"')}"
 Respond with ONLY a JSON object in this exact format:
 {"queries": ["query 1", "query 2", ...]}`;
 
-        const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    contents: [
-                        {
-                            role: "user",
-                            parts: [{ text: plannerPrompt }],
-                        },
-                    ],
-                    generationConfig: {
-                        temperature: 0.3,
-                        maxOutputTokens: 300,
-                        responseMimeType: "application/json",
-                    },
-                }),
-            }
-        );
-
-        if (!response.ok) {
-            console.error("Gemini API error:", response.status, response.statusText);
-            return NextResponse.json({ queries: [query] });
-        }
-
-        const data = await response.json();
-        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
         try {
-            const parsed = JSON.parse(text);
+            const result = await callOpenRouter({
+                model: model || DEFAULT_MODEL,
+                messages: [{ role: "user", content: plannerPrompt }],
+                temperature: 0.3,
+                max_tokens: 300,
+                response_format: { type: "json_object" },
+            });
+
+            const parsed = JSON.parse(result.content);
             // Validate and cap at 5 queries
             const queries = Array.isArray(parsed.queries)
                 ? parsed.queries.filter((q: unknown) => typeof q === "string" && q.trim()).slice(0, 5)
@@ -74,8 +52,8 @@ Respond with ONLY a JSON object in this exact format:
             }
 
             return NextResponse.json({ queries });
-        } catch {
-            console.warn("Failed to parse query planner response:", text);
+        } catch (parseError) {
+            console.warn("Failed to parse query planner response:", parseError);
             return NextResponse.json({ queries: [query] });
         }
     } catch (error) {
