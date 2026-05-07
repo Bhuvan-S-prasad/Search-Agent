@@ -170,7 +170,11 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
 
       try {
         // Step 1: Triage the query intent
-        const triageRes = await axios.post("/api/triage", { query: searchQuery, model: selectedModel });
+        const triageRes = await axios.post("/api/triage", { 
+          query: searchQuery, 
+          model: selectedModel,
+          libId: libId
+        });
         const intent = triageRes.data?.intent || "search";
         console.log("Intent classified as:", intent);
 
@@ -288,6 +292,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
         searchInput: searchQuery,
         searchResult: formattedSearchResp,
         recordId: recordId,
+        libId: libId,
         intent: intent,
         model: selectedModel
       });
@@ -502,7 +507,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
               )}
               {!showGeneratingState && chat.intent !== "chat" && (
                 <div className="ml-auto text-sm text-gray-500">
-                  1 task <span className="ml-1"> -- </span>
+                  {/* 1 task <span className="ml-1"> -- </span> */}
                 </div>
               )}
             </div>

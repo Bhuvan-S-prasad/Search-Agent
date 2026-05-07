@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callOpenRouter, DEFAULT_MODEL } from "@/lib/openrouter";
+import { getRecentHistory } from "@/services/chat-history";
 
 /**
  * Triage API — Classifies user intent as "chat" or "search"
@@ -7,7 +8,16 @@ import { callOpenRouter, DEFAULT_MODEL } from "@/lib/openrouter";
  */
 export async function POST(req: NextRequest) {
     try {
-        const { query, model } = await req.json();
+        const { query, model, libId } = await req.json();
+        
+        let historyContext = "";
+        if (libId) {
+            const history = await getRecentHistory(libId, 5);
+            if (history.length > 0) {
+                historyContext = "\nConversation History:\n" + 
+                    history.map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`).join("\n");
+            }
+        }
 
         if (!query || typeof query !== "string") {
             return NextResponse.json(
@@ -22,6 +32,7 @@ export async function POST(req: NextRequest) {
 
 2. "search" — Queries that require looking up information, facts, news, research, comparisons, explanations, or any topic that benefits from web search results. Examples: "what is quantum computing", "latest news about AI", "compare React vs Vue", "weather in Tokyo", "who won the 2024 election".
 
+${historyContext}
 User input: "${query.replace(/"/g, '\\"')}"
 
 Respond with ONLY a JSON object in this exact format, nothing else:

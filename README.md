@@ -6,8 +6,6 @@
 
 An AI-powered web search assistant that finds sources, synthesizes answers with inline citations, and offers a personalized discovery experience (news, markets, weather).
 
-
-
 ### Tech Stack
 
 ![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)
@@ -19,6 +17,7 @@ An AI-powered web search assistant that finds sources, synthesizes answers with 
 ![Inngest](https://img.shields.io/badge/Inngest-111827?style=for-the-badge&logo=inngest&logoColor=white)
 
 ### Core Technologies
+
 - **Frontend**: Next.js 16, React, TypeScript, Tailwind, shadcn/ui
 - **Auth**: Clerk (`app/layout.tsx`, `proxy.ts`, `app/(auth)/*`)
 - **Data**: Supabase (`services/supabase.tsx`, tables: `Users`, `Library`, `chats`)
@@ -28,7 +27,6 @@ An AI-powered web search assistant that finds sources, synthesizes answers with 
 - **News**: GNews API
 - **Weather**: WeatherAPI.com
 - **Markets**: AlphaVantage `/api/market-api` route
-
 
 ## 🏗️ System Design
 
@@ -99,11 +97,13 @@ ALPHA_VANTAGE_API_KEY=
 ## Getting Started
 
 1. Clone the repository
+
 ```bash
 git clone https://github.com/Bhuvan-S-prasad/Search-Agent.git
 ```
 
 2. Install dependencies
+
 ```bash
 npm install
 # or
@@ -113,6 +113,7 @@ yarn install
 3. Configure environment variables (see above).
 
 4. Run the development server
+
 ```bash
 npm run dev
 # or
@@ -139,33 +140,33 @@ yarn dev
 - [x] Implement discovery page with GNews, weather, markets
 - [x] Integrate Clerk auth and middleware protection
 - [x] Wire Google CSE + formatted search result ingestion
-- [x] Add Inngest background job for LLM answer generation   (9/11/2025)
-- [x] Persist chats and answers in Supabase                  (9/11/2025)
-- [x] Fix inline citation to display the source on hover     (10/11/2025)
+- [x] Add Inngest background job for LLM answer generation (9/11/2025)
+- [x] Persist chats and answers in Supabase (9/11/2025)
+- [x] Fix inline citation to display the source on hover (10/11/2025)
+- [x] Dynamically Respond and Search based on user query (Trigger search only if necessary) (01/05/2026)
+- [x] add multiple AI models support (04/05/2026)
+- [ ] add sessions for each chat
 - [ ] Integrate deepSearch with agentic capabilities
-- [ ] add multiple AI models support
 - [ ] add Finance page to retreive the data from a stock market api and generate a report using LLM
+- [ ] Dedicated pages for each news summary and its corresponding insights originating from the Discover Page.
 - [ ] make sharing button functional
 - [ ] File uploading and attachments
 - [ ] Audio input
-- [ ] Dedicated pages for each news summary and its corresponding insights originating from the Discover Page.
-- [ ] Dynamically Respond and Search based on user query (Trigger search only if necessary)
-
 
 ## 🙏 Acknowledgements
 
 This project was made possible thanks to the incredible work of the open-source community.  
 deeply appreciate the following technologies, libraries, whose tools and frameworks powered this project:
 
-- **[Next.js](https://nextjs.org/)** — for its seamless developer experience and powerful React-based full-stack capabilities.  
-- **[ShadCN](https://shadcn.com/)** — for providing elegant, customizable UI components built on top of Radix and Tailwind.  
-- **[Lucide Icons](https://www.radix-ui.com/)** — for its accessable ICONS  
-- **[Tailwind CSS](https://tailwindcss.com/)** — for enabling beautiful and responsive styling with minimal effort.  
-- **[Supabase](https://www.prisma.io/)** — for simplifying database interactions.  
-- **[Inngest](https://www.inngest.com/)** — for managing reliable serverless workflows and background jobs.  
-- **[Clerk Auth](https://github.com/betterauth/betterauth)** — for offering flexible, modern authentication solutions.  
+- **[Next.js](https://nextjs.org/)** — for its seamless developer experience and powerful React-based full-stack capabilities.
+- **[ShadCN](https://shadcn.com/)** — for providing elegant, customizable UI components built on top of Radix and Tailwind.
+- **[Lucide Icons](https://www.radix-ui.com/)** — for its accessable ICONS
+- **[Tailwind CSS](https://tailwindcss.com/)** — for enabling beautiful and responsive styling with minimal effort.
+- **[Supabase](https://www.prisma.io/)** — for simplifying database interactions.
+- **[Inngest](https://www.inngest.com/)** — for managing reliable serverless workflows and background jobs.
+- **[Clerk Auth](https://github.com/betterauth/betterauth)** — for offering flexible, modern authentication solutions.
 
-Finally, heartfelt thanks to all the **open-source maintainers and contributors** whose dedication makes building with these tools possible. 
+Finally, heartfelt thanks to all the **open-source maintainers and contributors** whose dedication makes building with these tools possible.
 
 ---
 
