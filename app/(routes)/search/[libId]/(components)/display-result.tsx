@@ -457,7 +457,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
     !searchResult.chats?.[(searchResult.chats?.length ?? 0) - 1]?.aiResponce;
 
   return (
-    <div className="mt-20 ml-27 mr-10 md:pl-10 md:pr-15 lg:pl-25 lg:pr-25 ">
+    <div className="mt-20 mx-auto max-w-2xl xl:max-w-3xl px-6 md:px-10 pb-32">
       {/* Render existing chats */}
       {searchResult?.chats?.map((chat, index) => {
         const isLatestChat = index === (searchResult.chats?.length ?? 0) - 1;
@@ -533,7 +533,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
       {/* Show full page loader only during initial search */}
       {["triaging", "planning", "searching"].includes(loadingState) && <SearchingLoader />}
 
-      <div className="bg-white w-full border-lg shadow-md p-3 px-5 flex justify-between fixed bottom-5 rounded-2xl max-w-md lg:max-w-xl xl:max-w-3xl">
+      <div className="bg-white w-full border-lg shadow-md p-3 px-5 flex justify-between fixed bottom-10 left-1/2 -translate-x-1/2 rounded-2xl max-w-md lg:max-w-xl xl:max-w-2xl z-50">
         <input
           placeholder="ask anything"
           className="outline-none flex-1"

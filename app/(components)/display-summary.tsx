@@ -100,19 +100,24 @@ function DisplaySummary({
   /* ── Markdown pre-processing: [1], [2,3] → <cite> ──────── */
 
   const processedContent = useMemo(() => {
-    return (aiResponce || "").replace(
-      /\[(\d+(?:\s*,\s*\d+)*)\]/g,
-      (_, numsRaw) => {
-        const nums = numsRaw
-          .split(",")
-          .map((n: string) => parseInt(n.trim(), 10))
-          .filter((n: number) => !Number.isNaN(n));
+    // Regex matches either a code block (to be ignored) or a citation pattern
+    const regex = /(```[\s\S]*?```|`[^`\n]+`)|\[(\d+(?:\s*,\s*\d+)*)\]/g;
 
-        const label = escapeHtml(formatLabel(nums));
+    return (aiResponce || "").replace(regex, (match, codeContent, numsRaw) => {
+      // If it's a code block or inline code, return it untouched
+      if (codeContent) return codeContent;
 
-        return `<cite data-citations="${nums.join(",")}">${label}</cite>`;
-      },
-    );
+      // Otherwise, it's a citation pattern - process it
+      const nums = numsRaw
+        .split(",")
+        .map((n: string) => parseInt(n.trim(), 10))
+        .filter((n: number) => !Number.isNaN(n));
+
+      if (nums.length === 0) return match;
+
+      const label = escapeHtml(formatLabel(nums));
+      return `<cite data-citations="${nums.join(",")}">${label}</cite>`;
+    });
   }, [aiResponce, formatLabel]);
 
   /* ── Tooltip positioning (computed in useEffect) ────────── */

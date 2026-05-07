@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callOpenRouter, DEFAULT_MODEL } from "@/lib/openrouter";
 import { getRecentHistory } from "@/services/chat-history";
+import { extractJson } from "@/lib/json-utils";
 
 /**
  * Triage API — Classifies user intent as "chat" or "search"
@@ -47,8 +48,8 @@ Respond with ONLY a JSON object in this exact format, nothing else:
                 response_format: { type: "json_object" },
             });
 
-            const parsed = JSON.parse(result.content);
-            const intent = parsed.intent === "chat" ? "chat" : "search";
+            const parsed = extractJson<{ intent: string }>(result.content);
+            const intent = parsed?.intent === "chat" ? "chat" : "search";
             return NextResponse.json({ intent });
         } catch (parseError) {
             console.warn("Failed to parse triage response:", parseError);

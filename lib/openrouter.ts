@@ -22,23 +22,24 @@ export const FREE_MODELS: OpenRouterModel[] = [
     description: "Google's fast, free flash model — great for quick tasks",
   },
   {
-    id: "meta-llama/llama-4-maverick:free",
-    name: "Llama 4 Maverick",
-    description: "Meta's latest open-weight model with strong reasoning",
-  },
+    id: "z-ai/glm-4.5-air:free",
+    name: "GLM-4.5 Air",
+    description: "Z-AI's advanced conversational model",
+  },  
   {
     id: "deepseek/deepseek-chat-v3-0324:free",
     name: "DeepSeek V3",
     description: "DeepSeek's advanced conversational model",
   },
   {
-    id: "microsoft/mai-ds-r1:free",
-    name: "MAI DS R1",
-    description: "Microsoft's efficient reasoning model",
+    id: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+    name: "NVIDIA Nemotron 3 Nano Omni",
+    description:
+      "NVIDIA's powerful and efficient model with strong reasoning capabilities.",
   },
   {
-    id: "qwen/qwen3-235b-a22b:free",
-    name: "Qwen 3 235B",
+    id: "qwen/qwen3-next-80b-a3b-instruct:free",
+    name: "Qwen 3",
     description: "Alibaba's powerful large multilingual model",
   },
 ];

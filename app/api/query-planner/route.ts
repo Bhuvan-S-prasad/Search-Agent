@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callOpenRouter, DEFAULT_MODEL } from "@/lib/openrouter";
+import { extractJson } from "@/lib/json-utils";
 
 /**
  * Query Planner API — Uses OpenRouter to decompose a user query into
@@ -41,9 +42,9 @@ Respond with ONLY a JSON object in this exact format:
                 response_format: { type: "json_object" },
             });
 
-            const parsed = JSON.parse(result.content);
+            const parsed = extractJson<{ queries: string[] }>(result.content);
             // Validate and cap at 5 queries
-            const queries = Array.isArray(parsed.queries)
+            const queries = (parsed && Array.isArray(parsed.queries))
                 ? parsed.queries.filter((q: unknown) => typeof q === "string" && q.trim()).slice(0, 5)
                 : [query];
 
