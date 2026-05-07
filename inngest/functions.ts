@@ -2,7 +2,7 @@ import { inngest } from "./client";
 import { supabaseAdmin as supabase } from "@/services/supabaseAdmin";
 import { LLM_MODEL_EVENT, type SearchResultItem } from "./events";
 import { callOpenRouter } from "@/lib/openrouter";
-import { getRecentHistory } from "@/services/chat-history";
+import { getRecentHistory, formatHistoryForPrompt } from "@/services/chat-history";
 
 // LLM function for search (keeping this as is)
 
@@ -74,8 +74,9 @@ Bold text sparingly, primarily for emphasis within paragraphs.
 Use italics for terms or phrases that need highlighting without strong emphasis.
 
 Code Snippets:
-Include code snippets using Markdown code blocks.
-Use the appropriate language identifier for syntax highlighting.
+- For **inline code** (variable names, short functions like \`input()\`, or file paths), use single backticks (\`). NEVER use triple backticks for short snippets that should stay within a sentence.
+- For **code blocks** (multi-line scripts or large examples), use triple backticks (\`\`\`) with the language identifier (e.g., \`\`\`python).
+- Ensure code blocks are self-contained and not placed in the middle of a sentence.
 
 Mathematical Expressions:
 Wrap all math expressions in LaTeX using \\\\( and \\\\) for inline and \\\\[ and \\\\] for block formulas. For example: \\\\(x^4 = x - 3\\\\)
@@ -123,7 +124,7 @@ Academic Research: You must provide long and detailed answers for academic resea
 Recent News: You need to concisely summarize recent news events based on the provided search results, grouping them by topics. Always use lists and highlight the news title at the beginning of each list item. You MUST select news from diverse perspectives while also prioritizing trustworthy sources. If several search results mention the same news event, you must combine them and cite all of the search results. Prioritize more recent events, ensuring to compare timestamps.
 Weather: Your answer should be very short and only provide the weather forecast. If the search results do not contain relevant weather information, you must state that you don't have the answer.
 People: You need to write a short, comprehensive biography for the person mentioned in the Query. Make sure to abide by the formatting instructions to create a visually appealing and easy to read answer. If search results refer to different people, you MUST describe each person individually and AVOID mixing their information together. NEVER start your answer with the person's name as a header.
-Coding: You MUST use markdown code blocks to write code, specifying the language for syntax highlighting, for example bash or python. If the Query asks for code, you should write the code first and then explain it.
+Coding: For short mentions or function names within a sentence, use **inline code** (single backticks). ONLY use triple backticks for multi-line code examples or complete solutions. If providing a solution, provide the code block first, then the explanation. Avoid putting triple-backtick blocks in the middle of a sentence; they should always be on their own line with a clear break.
 Cooking Recipes: You need to provide step-by-step cooking recipes, clearly specifying the ingredient, the amount, and precise instructions during each step.
 Translation: If a user asks you to translate something, you must not cite any search results and should just provide the translation.
 Creative Writing: If the Query requires creative writing, you DO NOT need to use or cite search results, and you may ignore General Instructions pertaining only to search. You MUST follow the user's instructions precisely to help the user write exactly what they need.
@@ -149,7 +150,7 @@ Your answer must be precise, of high-quality, and written by an expert using an 
 </output>
 
 <conversation_history>
-${history.map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`).join('\n')}
+${formatHistoryForPrompt(history)}
 </conversation_history>
 
 <personalization>

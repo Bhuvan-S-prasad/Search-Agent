@@ -13,6 +13,7 @@ import {
   type CSSProperties,
 } from "react";
 import Image from "next/image";
+import CodeBlock from "./code-block";
 
 /* ─── Types ────────────────────────────────────────────────── */
 
@@ -182,15 +183,57 @@ function DisplaySummary({
   return (
     <div
       ref={wrapperRef}
-      className="relative prose prose-neutral dark:prose-invert max-w-none text-[16px] leading-[1.9]"
+      className="results-container relative max-w-none text-[16.5px] leading-[1.65] tracking-[-0.01em]"
     >
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeRaw]}
         components={{
-          p: (props) => <p className="mb-4" {...props} />,
+          p: ({ children }) => <p className="mb-4 last:mb-0 text-foreground/90 font-normal">{children}</p>,
+          h2: ({ children }) => (
+            <h2 className="text-2xl font-semibold mt-10 mb-5 text-foreground tracking-tight flex items-center gap-2 group">
+              <span className="w-1 h-6 bg-primary/20 rounded-full group-hover:bg-primary/40 transition-colors" />
+              {children}
+            </h2>
+          ),
+          h3: ({ children }) => (
+            <h3 className="text-xl font-medium mt-7 mb-3 text-foreground tracking-tight">{children}</h3>
+          ),
+          ul: ({ children }) => <ul className="mb-6 space-y-2 list-none pl-1">{children}</ul>,
+          ol: ({ children }) => <ol className="mb-6 space-y-2 list-decimal pl-6 text-foreground/90">{children}</ol>,
+          li: ({ children, ordered, ...props }: { 
+            children?: React.ReactNode; 
+            ordered?: boolean;
+          } & React.LiHTMLAttributes<HTMLLIElement>) => {
+             // If it's an ordered list, use a custom bullet
+             if (ordered) return <li className="pl-2" {...props}>{children}</li>;
+             return (
+               <li className="relative pl-6 flex items-start gap-3" {...props}>
+                 <span className="absolute left-0 top-[0.6em] w-1.5 h-1.5 rounded-full bg-primary/30 shrink-0" />
+                 <span className="flex-1">{children}</span>
+               </li>
+             );
+          },
+          blockquote: ({ children }) => (
+            <blockquote className="my-8 pl-6 border-l-2 border-primary/20 italic text-foreground/80 bg-primary/5 py-4 pr-4 rounded-r-lg">
+              {children}
+            </blockquote>
+          ),
+          hr: () => <hr className="my-12 border-t border-border/50" />,
+          table: ({ children }) => (
+            <div className="my-8 overflow-x-auto rounded-xl border border-border shadow-sm bg-card/50 backdrop-blur-sm">
+              <table className="w-full text-sm text-left border-collapse">{children}</table>
+            </div>
+          ),
+          thead: ({ children }) => <thead className="bg-muted/50 border-b border-border">{children}</thead>,
+          th: ({ children }) => <th className="px-6 py-4 font-semibold text-foreground">{children}</th>,
+          td: ({ children }) => <td className="px-6 py-4 border-b border-border/30 text-foreground/80">{children}</td>,
           a: (props) => (
-            <a className="text-primary underline" target="_blank" {...props} />
+            <a 
+              className="text-primary font-medium underline underline-offset-4 decoration-primary/30 hover:decoration-primary transition-all" 
+              target="_blank" 
+              {...props} 
+            />
           ),
 
           cite: ({ children, ...props }: CiteProps) => {
@@ -204,7 +247,7 @@ function DisplaySummary({
 
             return (
               <span
-                className="citation-trigger"
+                className="citation-trigger inline-flex items-center"
                 onMouseEnter={(e) => showTooltip(e, nums)}
                 onMouseLeave={hideTooltip}
               >
@@ -213,6 +256,27 @@ function DisplaySummary({
                 </span>
               </span>
             );
+          },
+          code: ({ inline, className, children, ...props }: { 
+            inline?: boolean; 
+            className?: string; 
+            children?: React.ReactNode;
+          } & React.HTMLAttributes<HTMLElement>) => {
+            const match = /language-(\w+)/.exec(className || "");
+            const language = match ? match[1] : "";
+            const content = String(children).replace(/\n$/, "");
+
+            const isInline = inline || (!content.includes("\n") && content.length < 30 && !language);
+
+            if (isInline) {
+              return (
+                <code className="bg-zinc-100 dark:bg-zinc-800/50 px-1.5 py-0.5 rounded font-mono text-[0.85em] text-zinc-900 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700/50" {...props}>
+                  {children}
+                </code>
+              );
+            }
+
+            return <CodeBlock language={language} value={content} />;
           },
         }}
       >
@@ -299,24 +363,31 @@ function DisplaySummary({
         .citation-badge {
           display: inline-flex;
           align-items: center;
+          justify-content: center;
           font-size: 11px;
           font-weight: 600;
           font-style: normal;
           line-height: 1;
-          padding: 2px 6px;
-          border-radius: 4px;
+          padding: 2px 7px;
+          margin: 0 3px;
+          border-radius: 6px;
           cursor: pointer;
-          vertical-align: baseline;
-          transition: all 0.15s ease;
+          vertical-align: middle;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
           color: var(--primary);
-          background: color-mix(in oklch, var(--primary) 8%, transparent);
-          border: 1px solid color-mix(in oklch, var(--primary) 15%, transparent);
+          background: color-mix(in oklch, var(--primary) 7%, transparent);
+          border: 1px solid color-mix(in oklch, var(--primary) 12%, transparent);
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+          position: relative;
+          top: -1px;
         }
 
         .citation-trigger:hover .citation-badge {
-          background: color-mix(in oklch, var(--primary) 16%, transparent);
-          border-color: color-mix(in oklch, var(--primary) 30%, transparent);
-          box-shadow: 0 0 0 2px color-mix(in oklch, var(--primary) 8%, transparent);
+          background: var(--primary);
+          color: white;
+          border-color: var(--primary);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 8px color-mix(in oklch, var(--primary) 20%, transparent);
         }
 
         /* ── Tooltip Container ─────────────────────────────── */
