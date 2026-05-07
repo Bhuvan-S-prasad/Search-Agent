@@ -12,6 +12,7 @@ export type LlmModelEventData = {
     searchInput: string;
     searchResult: SearchResultItem[];
     recordId: number;
+    libId: string;
     model?: string;
 };
 
@@ -25,6 +26,7 @@ export type LlmModelEvent = {
 export type ChatModelEventData = {
     searchInput: string;
     recordId: number;
+    libId: string;
     model?: string;
 };
 

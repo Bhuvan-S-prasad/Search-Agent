@@ -172,7 +172,7 @@ export default function InputBox() {
 
           <div className="flex gap-2 items-center">
             <Select value={selectedModel} onValueChange={setSelectedModel}>
-              <SelectTrigger className="w-[180px] h-9">
+              <SelectTrigger className="w-[180px] h-9 border-none shadow-none hover:bg-gray-100 transition-colors focus:ring-0 focus:ring-offset-0">
                 <SelectValue placeholder="Select Model" />
               </SelectTrigger>
               <SelectContent>

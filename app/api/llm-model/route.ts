@@ -3,7 +3,7 @@ import { LLM_MODEL_EVENT, CHAT_MODEL_EVENT } from "@/inngest/events";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
-    const { searchInput, searchResult, recordId, intent, model } = await req.json();
+    const { searchInput, searchResult, recordId, libId, intent, model } = await req.json();
 
     if (intent === "chat") {
         const inngestRunId = await inngest.send({
@@ -11,6 +11,7 @@ export async function POST(req: NextRequest) {
             data: {
                 searchInput: searchInput,
                 recordId: recordId,
+                libId: libId,
                 model: model
             }
         });
@@ -22,6 +23,7 @@ export async function POST(req: NextRequest) {
                 searchInput: searchInput,
                 searchResult: searchResult,
                 recordId: recordId,
+                libId: libId,
                 model: model
             }
         });
