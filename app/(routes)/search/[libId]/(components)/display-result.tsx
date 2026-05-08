@@ -492,7 +492,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
               ))}
               
               {chat.intent === "chat" && (
-                <div className="flex items-center gap-1 relative text-sm font-medium text-black font-semibold">
+                <div className="flex items-center gap-1 relative text-sm text-black font-semibold">
                   <LucideSparkles className="w-5 h-5" />
                   <span>Chat</span>
                   <span className="absolute -bottom-2 left-0 w-full h-0.5 bg-black rounded"></span>
