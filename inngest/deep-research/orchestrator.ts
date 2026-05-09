@@ -28,6 +28,10 @@ export const deepResearchOrchestrator = inngest.createFunction(
     async ({ event, step }) => {
         const { sessionId, query } = event.data;
 
+        console.log(`[DeepResearch] ====== SESSION START ======`);
+        console.log(`[DeepResearch] Session ID: ${sessionId}`);
+        console.log(`[DeepResearch] Query: "${query}"`);
+
         // Step 1: Plan report structure
         const reportPlan = await step.run("plan-report-structure", async () => {
             await appendActivityLog(sessionId, {
@@ -37,6 +41,7 @@ export const deepResearchOrchestrator = inngest.createFunction(
             }, "planning");
 
             const prompt = getOrchestratorPlanningPrompt(query);
+            console.log(`[DeepResearch][Orchestrator] Planning prompt length: ${prompt.length} chars`);
 
             const result = await callOpenRouter({
                 model: AGENT_MODELS.orchestrator,
@@ -46,11 +51,24 @@ export const deepResearchOrchestrator = inngest.createFunction(
                 response_format: { type: "json_object" },
             });
 
+            console.log(`[DeepResearch][Orchestrator] Raw LLM response (first 500 chars):`, result.content?.substring(0, 500));
+            console.log(`[DeepResearch][Orchestrator] Model used: ${result.model}`);
+            console.log(`[DeepResearch][Orchestrator] Token usage:`, result.usage);
+
             const plan = extractJson<ReportPlan>(result.content);
 
             if (!plan || !plan.sections || plan.sections.length === 0) {
+                console.error(`[DeepResearch][Orchestrator] Failed to parse plan. Raw content:`, result.content);
                 throw new Error("Failed to generate report plan");
             }
+
+            console.log(`[DeepResearch][Orchestrator] Plan parsed successfully:`);
+            console.log(`[DeepResearch][Orchestrator]   Title: "${plan.title}"`);
+            console.log(`[DeepResearch][Orchestrator]   Sections: ${plan.sections.length}`);
+            plan.sections.forEach((s, i) => {
+                console.log(`[DeepResearch][Orchestrator]   Section ${i+1}: "${s.heading}" (${s.search_queries.length} queries)`);
+                s.search_queries.forEach(q => console.log(`[DeepResearch][Orchestrator]     - Query: "${q}"`));
+            });
 
             await updateSession(sessionId, {
                 report_plan: plan,
@@ -119,6 +137,11 @@ export const deepResearchOrchestrator = inngest.createFunction(
             const allResults = await Promise.all(researchPromises);
             results.push(...allResults);
 
+            console.log(`[DeepResearch][Orchestrator] All sub-agents completed. Results summary:`);
+            results.forEach(r => {
+                console.log(`[DeepResearch][Orchestrator]   ${r.section_id}: ${r.key_findings.length} findings, ${r.sources.length} sources, content: ${r.detailed_content?.length || 0} chars`);
+            });
+
             // Save all section findings
             await updateSession(sessionId, {
                 section_findings: results,
@@ -136,6 +159,9 @@ export const deepResearchOrchestrator = inngest.createFunction(
             });
 
             const result = await processCitations(sectionFindings, sessionId);
+
+            console.log(`[DeepResearch][Citations] Processed ${result.citations.length} unique citations`);
+            result.citations.forEach(c => console.log(`[DeepResearch][Citations]   [${c.index}] ${c.title} — ${c.url}`));
 
             await appendActivityLog(sessionId, {
                 agent: "citation-agent",
@@ -161,10 +187,14 @@ export const deepResearchOrchestrator = inngest.createFunction(
                 sessionId
             );
 
+            const wordCount = report.split(/\s+/).length;
+            console.log(`[DeepResearch][Synthesis] Report generated: ${wordCount} words, ${report.length} chars`);
+            console.log(`[DeepResearch][Synthesis] Report preview (first 300 chars):`, report.substring(0, 300));
+
             await appendActivityLog(sessionId, {
                 agent: "synthesis-agent",
                 action: "synthesis_completed",
-                detail: `Report synthesized (${report.split(/\s+/).length} words)`,
+                detail: `Report synthesized (${wordCount} words)`,
             });
 
             return report;
@@ -179,6 +209,8 @@ export const deepResearchOrchestrator = inngest.createFunction(
             }, "reviewing");
 
             const review = await reviewReport(finalReport, query, sessionId);
+
+            console.log(`[DeepResearch][Review] Result:`, JSON.stringify(review, null, 2));
 
             await appendActivityLog(sessionId, {
                 agent: "review-agent",
@@ -227,6 +259,9 @@ export const deepResearchOrchestrator = inngest.createFunction(
                 }, "completed");
             }
         });
+
+        console.log(`[DeepResearch] ====== SESSION COMPLETE ======`);
+        console.log(`[DeepResearch] Session ID: ${sessionId}`);
 
         return {
             success: true,

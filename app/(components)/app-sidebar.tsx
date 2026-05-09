@@ -7,7 +7,7 @@ import {
   UserButton,
   useUser,
 } from "@clerk/nextjs";
-import { Home, Compass, BookOpen, LogIn, Plus, DollarSign } from "lucide-react";
+import { Home, Compass, BookOpen, LogIn, Plus, DollarSign, Atom } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { supabase } from "@/services/supabase";
@@ -44,12 +44,21 @@ interface LibraryItem {
   userEmail: string;
 }
 
+interface ResearchItem {
+  id: string;
+  query: string;
+  status: string;
+  user_email: string;
+  created_at: string;
+}
+
 export default function AppSidebar() {
   const path = usePathname();
   const router = useRouter();
   const { user } = useUser();
   const [showLibrary, setShowLibrary] = useState(false);
   const [libraryHistory, setLibraryHistory] = useState<LibraryItem[]>([]);
+  const [researchHistory, setResearchHistory] = useState<ResearchItem[]>([]);
 
   const finalMenuOptions = user
     ? MenuOptions.filter((menu) => menu.title !== "SignIn")
@@ -65,6 +74,17 @@ export default function AppSidebar() {
 
       if (Library) {
         setLibraryHistory(Library);
+      }
+
+      const { data: research } = await supabase
+        .from("deep_research_sessions")
+        .select("id, query, status, user_email, created_at")
+        .eq("user_email", user?.primaryEmailAddress?.emailAddress)
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (research) {
+        setResearchHistory(research);
       }
     };
 
@@ -160,20 +180,45 @@ export default function AppSidebar() {
               </Button>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-2">
-              {libraryHistory.length > 0 ? (
-                libraryHistory.map((item, index) => (
-                  <div
-                    key={index}
-                    className="py-1.5 px-3 hover:bg-accent cursor-pointer transition-colors"
-                    onClick={() => handleLibraryClick(item.libId)}
-                  >
-                    <h3 className="font-medium text-sm truncate">
-                      {item.searchInput}
-                    </h3>
-                  </div>
-                ))
-              ) : (
+            <div className="flex-1 overflow-y-auto space-y-1">
+              {/* Deep Research Items */}
+              {researchHistory.length > 0 && (
+                <>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-2 pb-1">Research</p>
+                  {researchHistory.map((item) => (
+                    <div
+                      key={item.id}
+                      className="py-1.5 px-3 hover:bg-accent cursor-pointer transition-colors rounded-md"
+                      onClick={() => { router.push(`/deep-research/${item.id}`); setShowLibrary(false); }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Atom className="w-3 h-3 text-primary shrink-0" />
+                        <h3 className="font-medium text-sm truncate">{item.query}</h3>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {/* Regular Search Items */}
+              {libraryHistory.length > 0 && (
+                <>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-3 pb-1">Searches</p>
+                  {libraryHistory.map((item, index) => (
+                    <div
+                      key={index}
+                      className="py-1.5 px-3 hover:bg-accent cursor-pointer transition-colors rounded-md"
+                      onClick={() => handleLibraryClick(item.libId)}
+                    >
+                      <h3 className="font-medium text-sm truncate">
+                        {item.searchInput}
+                      </h3>
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {libraryHistory.length === 0 && researchHistory.length === 0 && (
                 <div className="text-center text-muted-foreground text-sm py-8">
                   <BookOpen className="h-12 w-12 mx-auto mb-2 opacity-50" />
                   <p>No library items yet</p>

@@ -11,7 +11,10 @@ export async function reviewReport(
     originalQuery: string,
     sessionId: string
 ): Promise<ReviewResult> {
+    console.log(`[DeepResearch][ReviewAgent] Starting quality review for report (${report.length} chars) against query: "${originalQuery}"`);
+
     const prompt = getReviewPrompt(report, originalQuery);
+    console.log(`[DeepResearch][ReviewAgent] Review prompt length: ${prompt.length} chars`);
 
     const result = await callOpenRouter({
         model: AGENT_MODELS.reviewAgent,
@@ -21,9 +24,13 @@ export async function reviewReport(
         response_format: { type: "json_object" },
     });
 
+    console.log(`[DeepResearch][ReviewAgent] Raw LLM response:`, result.content?.substring(0, 300));
+    console.log(`[DeepResearch][ReviewAgent] Model: ${result.model}, Tokens:`, result.usage);
+
     const review = extractJson<ReviewResult>(result.content);
 
     if (!review) {
+        console.warn(`[DeepResearch][ReviewAgent] Failed to parse review results. Defaulting to approved.`);
         // Default to approved if parsing fails — don't block the report
         return {
             approved: true,
@@ -33,6 +40,8 @@ export async function reviewReport(
             sections_needing_research: [],
         };
     }
+
+    console.log(`[DeepResearch][ReviewAgent] Parsed review: Approved = ${review.approved}, Quality = ${review.overall_quality}`);
 
     return review;
 }

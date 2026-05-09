@@ -1,12 +1,11 @@
-
 // Agent Model Configuration
 
 export const AGENT_MODELS = {
-  orchestrator: "deepseek/deepseek-chat-v3-0324:free",
+  orchestrator: "google/gemini-2.0-flash-lite-001",
   subAgent: "google/gemini-2.0-flash-lite-001",
   citationAgent: "google/gemini-2.0-flash-lite-001",
-  synthesisAgent: "deepseek/deepseek-chat-v3-0324:free",
-  reviewAgent: "qwen/qwen3-next-80b-a3b-instruct:free",
+  synthesisAgent: "google/gemini-2.0-flash-lite-001",
+  reviewAgent: "google/gemini-2.0-flash-lite-001",
 } as const;
 
 //  Research Session Status
@@ -76,7 +75,13 @@ export interface ReviewResult {
 
 export interface ActivityLogEntry {
   timestamp: string;
-  agent: "orchestrator" | "sub-agent" | "citation-agent" | "synthesis-agent" | "review-agent" | "system";
+  agent:
+    | "orchestrator"
+    | "sub-agent"
+    | "citation-agent"
+    | "synthesis-agent"
+    | "review-agent"
+    | "system";
   action: string;
   detail: string;
   section_id?: string;

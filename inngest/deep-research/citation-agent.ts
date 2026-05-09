@@ -31,6 +31,8 @@ export async function processCitations(
     sectionFindings: SectionFindings[],
     sessionId: string
 ): Promise<CitationProcessingResult> {
+    console.log(`[DeepResearch][CitationAgent] Starting citation processing for ${sectionFindings.length} sections`);
+
     // Collect all sources across sections
     const allSources: Array<{ url: string; title: string; snippet: string; domain: string; fromSection: string }> = [];
 
@@ -46,6 +48,8 @@ export async function processCitations(
         }
     }
 
+    console.log(`[DeepResearch][CitationAgent] Collected ${allSources.length} total raw sources across all sections`);
+
     if (allSources.length === 0) {
         const emptyResult: CitationProcessingResult = { citations: [], urlToIndex: {} };
         await updateSession(sessionId, { citations: [] });
@@ -58,6 +62,7 @@ export async function processCitations(
     ).join("\n---\n");
 
     const prompt = getCitationAgentPrompt(sourcesText);
+    console.log(`[DeepResearch][CitationAgent] Citation prompt length: ${prompt.length} chars`);
 
     const result = await callOpenRouter({
         model: AGENT_MODELS.citationAgent,
@@ -67,9 +72,13 @@ export async function processCitations(
         response_format: { type: "json_object" },
     });
 
+    console.log(`[DeepResearch][CitationAgent] Raw LLM response (first 200 chars):`, result.content?.substring(0, 200));
+    console.log(`[DeepResearch][CitationAgent] Model: ${result.model}, Tokens:`, result.usage);
+
     const parsed = extractJson<CitationAgentResult>(result.content);
 
     if (!parsed || !parsed.citations) {
+        console.warn(`[DeepResearch][CitationAgent] Failed to parse citations from LLM response. Using fallback dedup.`);
         // Fallback: create citation index manually by deduplicating URLs
         return buildFallbackCitations(allSources, sessionId);
     }

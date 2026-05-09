@@ -33,6 +33,9 @@ interface AnalysisResult {
 async function executeSearch(queries: string[]): Promise<SearchResultItem[]> {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
+    console.log(`[DeepResearch][SubAgent] Executing search with ${queries.length} queries:`);
+    queries.forEach((q, i) => console.log(`[DeepResearch][SubAgent]   Query ${i+1}: "${q}"`));
+
     try {
         const response = await fetch(`${baseUrl}/api/google-search-api`, {
             method: "POST",
@@ -41,14 +44,19 @@ async function executeSearch(queries: string[]): Promise<SearchResultItem[]> {
         });
 
         if (!response.ok) {
-            console.error("Search API error:", response.status);
+            console.error(`[DeepResearch][SubAgent] Search API error: ${response.status} ${response.statusText}`);
             return [];
         }
 
         const data = await response.json();
-        return data.items || [];
+        const items = data.items || [];
+        console.log(`[DeepResearch][SubAgent] Search returned ${items.length} results`);
+        items.forEach((item: SearchResultItem, i: number) => {
+            console.log(`[DeepResearch][SubAgent]   [${i}] ${item.title} — ${item.link}`);
+        });
+        return items;
     } catch (error) {
-        console.error("Failed to execute search:", error);
+        console.error(`[DeepResearch][SubAgent] Failed to execute search:`, error);
         return [];
     }
 }
@@ -60,6 +68,8 @@ export async function researchSection(
     section: SectionPlan,
     sessionId: string
 ): Promise<SectionFindings> {
+    console.log(`[DeepResearch][SubAgent] ── Researching section: "${section.heading}" (${section.id})`);
+
     // Step 1: Execute search queries for this section
     const searchResults = await executeSearch(section.search_queries);
 
@@ -86,7 +96,19 @@ Domain: ${item.displayLink || ""}`
         response_format: { type: "json_object" },
     });
 
+    console.log(`[DeepResearch][SubAgent] LLM response for "${section.heading}" (first 300 chars):`, result.content?.substring(0, 300));
+    console.log(`[DeepResearch][SubAgent] Model: ${result.model}, Tokens:`, result.usage);
+
     const analysis = extractJson<AnalysisResult>(result.content);
+
+    if (!analysis) {
+        console.warn(`[DeepResearch][SubAgent] Failed to parse analysis for "${section.heading}". Raw:`, result.content?.substring(0, 200));
+    } else {
+        console.log(`[DeepResearch][SubAgent] Parsed analysis for "${section.heading}":`)
+        console.log(`[DeepResearch][SubAgent]   Key findings: ${analysis.key_findings?.length || 0}`);
+        console.log(`[DeepResearch][SubAgent]   Content length: ${analysis.detailed_content?.length || 0} chars`);
+        console.log(`[DeepResearch][SubAgent]   Sources used indices: [${analysis.sources_used?.join(', ') || 'none'}]`);
+    }
 
     // Build source references from the search results that were actually used
     const sources: SourceReference[] = [];
@@ -119,6 +141,8 @@ Domain: ${item.displayLink || ""}`
             });
         }
     }
+
+    console.log(`[DeepResearch][SubAgent] Final sources for "${section.heading}": ${sources.length} references`);
 
     return {
         section_id: section.id,
