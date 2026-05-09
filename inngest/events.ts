@@ -36,6 +36,23 @@ export type ChatModelEvent = {
     data: ChatModelEventData;
 };
 
+// ─── Deep Research Event ────────────────────────────────────
+
+// Event data payload type for "deep-research" event
+export type DeepResearchEventData = {
+    sessionId: string;
+    query: string;
+    userEmail: string;
+    userId: string;
+};
+
+// Full event type for Inngest v3 EventSchemas
+export type DeepResearchEvent = {
+    name: "deep-research";
+    data: DeepResearchEventData;
+};
+
 // Event name constants
 export const LLM_MODEL_EVENT = "llm-model" as const;
 export const CHAT_MODEL_EVENT = "chat-model" as const;
+export const DEEP_RESEARCH_EVENT = "deep-research" as const;
