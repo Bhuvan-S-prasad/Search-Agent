@@ -3,13 +3,25 @@ import { supabaseAdmin as supabase } from "@/services/supabaseAdmin";
 import { inngest } from "@/inngest/client";
 import { DEEP_RESEARCH_EVENT } from "@/inngest/events";
 import type { ActivityLogEntry } from "@/inngest/deep-research/types";
+import { auth, currentUser } from "@clerk/nextjs/server";
 
 /**
  * POST /api/deep-research/start
  */
 export async function POST(req: NextRequest) {
+    const { userId: clerkUserId } = await auth();
+    const user = await currentUser();
+
+    if (!clerkUserId) {
+        return NextResponse.json(
+            { error: "Unauthorized" },
+            { status: 401 }
+        );
+    }
+
     try {
-        const { query, userId, userEmail } = await req.json();
+        const { query } = await req.json();
+        const userEmail = user?.primaryEmailAddress?.emailAddress || "anonymous";
 
         if (!query || typeof query !== "string" || !query.trim()) {
             return NextResponse.json(
@@ -31,8 +43,8 @@ export async function POST(req: NextRequest) {
             .from("deep_research_sessions")
             .insert({
                 query: query.trim(),
-                user_email: userEmail || "anonymous",
-                user_id: userId || null,
+                user_email: userEmail,
+                user_id: clerkUserId,
                 status: "planning",
                 report_plan: null,
                 section_findings: [],
@@ -60,8 +72,8 @@ export async function POST(req: NextRequest) {
             data: {
                 sessionId,
                 query: query.trim(),
-                userEmail: userEmail || "anonymous",
-                userId: userId || "",
+                userEmail: userEmail,
+                userId: clerkUserId,
             },
         });
 
@@ -78,3 +90,4 @@ export async function POST(req: NextRequest) {
         );
     }
 }
+

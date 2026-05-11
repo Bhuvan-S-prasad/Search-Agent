@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import { callOpenRouter, DEFAULT_MODEL } from "@/lib/openrouter";
 import { getRecentHistory } from "@/services/chat-history";
 import { extractJson } from "@/lib/json-utils";
@@ -8,6 +9,15 @@ import { extractJson } from "@/lib/json-utils";
  * Uses OpenRouter for fast, cheap classification
  */
 export async function POST(req: NextRequest) {
+    const { userId } = await auth();
+
+    if (!userId) {
+        return NextResponse.json(
+            { error: "Unauthorized" },
+            { status: 401 }
+        );
+    }
+
     try {
         const { query, model, libId } = await req.json();
         
@@ -60,3 +70,4 @@ Respond with ONLY a JSON object in this exact format, nothing else:
         return NextResponse.json({ intent: "search" });
     }
 }
+

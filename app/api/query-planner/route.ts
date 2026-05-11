@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import { callOpenRouter, DEFAULT_MODEL } from "@/lib/openrouter";
 import { extractJson } from "@/lib/json-utils";
 
@@ -7,6 +8,15 @@ import { extractJson } from "@/lib/json-utils";
  * 1–5 optimized Google search queries for parallel execution.
  */
 export async function POST(req: NextRequest) {
+    const { userId } = await auth();
+
+    if (!userId) {
+        return NextResponse.json(
+            { error: "Unauthorized" },
+            { status: 401 }
+        );
+    }
+
     try {
         const { query, model } = await req.json();
 

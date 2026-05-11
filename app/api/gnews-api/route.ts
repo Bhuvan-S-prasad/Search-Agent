@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 
 interface RequestBody {
   query: string;
@@ -28,6 +29,15 @@ interface ErrorResponse {
 }
 
 export async function POST(req: NextRequest) {
+  const { userId } = await auth();
+
+  if (!userId) {
+    return NextResponse.json(
+      { error: "Unauthorized", articles: [] } as ErrorResponse,
+      { status: 401 }
+    );
+  }
+
   try {
     const body: RequestBody = await req.json();
     const { query, category } = body;
@@ -59,4 +69,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
+}
