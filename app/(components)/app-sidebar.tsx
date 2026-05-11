@@ -26,11 +26,6 @@ const MenuOptions = [
     path: "/discover",
   },
   {
-    title: "finance",
-    icon: DollarSign,
-    path: "/finance",
-  },
-  {
     title: "SignIn",
     icon: LogIn,
     path: "/sign-in",
@@ -171,13 +166,6 @@ export default function AppSidebar() {
                 <BookOpen className="h-5 w-5" />
                 Library
               </h2>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => router.push("/library")}
-              >
-                View All
-              </Button>
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-1">
