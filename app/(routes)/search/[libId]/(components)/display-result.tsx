@@ -343,13 +343,6 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
     }
   };
 
-  // Handle Enter key press
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSearch();
-    }
-  };
 
   // Initialize component - fetch results or trigger new search
   useEffect(() => {
@@ -533,19 +526,33 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
       {/* Show full page loader only during initial search */}
       {["triaging", "planning", "searching"].includes(loadingState) && <SearchingLoader />}
 
-      <div className="bg-white w-full border-lg shadow-md p-3 px-5 flex justify-between fixed bottom-10 left-1/2 -translate-x-1/2 rounded-2xl max-w-md lg:max-w-xl xl:max-w-2xl z-50">
-        <input
-          placeholder="ask anything"
-          className="outline-none flex-1"
+      <div className="bg-white w-full shadow-lg border border-gray-200/60 fixed bottom-6 left-1/2 -translate-x-1/2 rounded-2xl max-w-md lg:max-w-xl xl:max-w-2xl z-50 flex flex-col overflow-hidden">
+        <textarea
+          placeholder="Ask follow-up..."
+          className="outline-none w-full resize-none bg-transparent px-5 pt-4 pb-2 text-[15px] text-gray-800 placeholder:text-gray-400 leading-relaxed"
           value={userInput}
-          onChange={(e) => setUserInput(e.target.value)}
-          onKeyPress={handleKeyPress}
+          onChange={(e) => {
+            setUserInput(e.target.value);
+            // Auto-resize: reset height then set to scrollHeight
+            e.target.style.height = "auto";
+            e.target.style.height = Math.min(e.target.scrollHeight, 160) + "px";
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              if (userInput.trim() && loadingState === "idle") {
+                handleSearch();
+              }
+            }
+          }}
           disabled={loadingState !== "idle"}
+          rows={1}
+          style={{ minHeight: "40px", maxHeight: "160px" }}
         />
-        <div className="flex gap-2 items-center">
+        <div className="flex items-center justify-between px-3 pb-3 pt-1">
           <Select value={selectedModel} onValueChange={setSelectedModel}>
-            <SelectTrigger className="w-[140px] h-9 md:w-[180px]">
-              <SelectValue placeholder="Select Model" />
+            <SelectTrigger className="h-8 w-auto gap-1.5 border-0 shadow-none bg-gray-100/80 hover:bg-gray-200/80 rounded-lg px-3 text-xs font-medium text-gray-600 focus:ring-0 transition-colors">
+              <SelectValue placeholder="Model" />
             </SelectTrigger>
             <SelectContent>
               {AIModelsOptions.map((model) => (
@@ -558,11 +565,13 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
           <Button
             onClick={handleSearch}
             disabled={!userInput.trim() || loadingState !== "idle"}
+            size="sm"
+            className="rounded-xl h-8 w-8 p-0 bg-black hover:bg-gray-800 text-white transition-all disabled:opacity-30"
           >
             {loadingState !== "idle" ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
-              <SendHorizonalIcon />
+              <SendHorizonalIcon className="w-4 h-4" />
             )}
           </Button>
         </div>
