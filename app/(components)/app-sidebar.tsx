@@ -7,11 +7,12 @@ import {
   UserButton,
   useUser,
 } from "@clerk/nextjs";
-import { Home, Compass, BookOpen, LogIn, Plus, DollarSign, Atom } from "lucide-react";
+import { Home, Compass, BookOpen, LogIn, Plus, Atom } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { supabase } from "@/services/supabase";
 import Image from "next/image";
+import axios from "axios";
+
 
 const MenuOptions = [
   {
@@ -61,27 +62,22 @@ export default function AppSidebar() {
 
   useEffect(() => {
     const GetLibraryHistory = async () => {
-      const { data: Library } = await supabase
-        .from("Library")
-        .select("*")
-        .eq("userEmail", user?.primaryEmailAddress?.emailAddress)
-        .order("id", { ascending: false });
+      try {
+        const response = await axios.get("/api/user/history");
+        const { library, research } = response.data;
 
-      if (Library) {
-        setLibraryHistory(Library);
-      }
+        if (library) {
+          setLibraryHistory(library);
+        }
 
-      const { data: research } = await supabase
-        .from("deep_research_sessions")
-        .select("id, query, status, user_email, created_at")
-        .eq("user_email", user?.primaryEmailAddress?.emailAddress)
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      if (research) {
-        setResearchHistory(research);
+        if (research) {
+          setResearchHistory(research);
+        }
+      } catch (error) {
+        console.error("Error fetching history:", error);
       }
     };
+
 
     if (user) {
       GetLibraryHistory();

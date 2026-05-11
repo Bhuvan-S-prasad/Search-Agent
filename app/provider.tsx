@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState, ReactNode } from "react";
-import { supabase } from "@/services/supabase";
 import { useUser } from "@clerk/nextjs";
 import { UserDetailContext } from "@/context/user-detail-context";
 import { toast } from "sonner";
+import axios from "axios";
+
 
 interface ProviderProps {
   children: ReactNode;
@@ -44,37 +45,20 @@ function Provider({ children }: ProviderProps) {
       }
 
       try {
-        const { data: upsertedUser, error: upsertError } = await supabase
-          .from("Users")
-          .upsert(
-            {
-              email: email,
-              name: user?.fullName || null,
-            },
-            {
-              onConflict: "email",
-              ignoreDuplicates: false,
-            }
-          )
-          .select()
-          .single();
+        const response = await axios.post("/api/user/sync");
+        const upsertedUser = response.data;
 
         if (!isMounted) return;
-
-        if (upsertError) {
-          toast.error("Error syncing your profile. Please try again.");
-          setIsLoading(false);
-          return;
-        }
 
         setUserDetail(upsertedUser);
         setIsLoading(false);
       } catch (err) {
         if (!isMounted) return;
-        console.error("Unexpected error:", err);
-        toast.error("Unexpected error. Please refresh and try again.");
+        console.error("Unexpected error in user sync:", err);
+        toast.error("Error syncing your profile. Please try again.");
         setIsLoading(false);
       }
+
     };
 
     createNewUser();
