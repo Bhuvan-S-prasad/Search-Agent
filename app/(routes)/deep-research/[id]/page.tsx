@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import ResearchProgress from "./(components)/research-progress";
 import ResearchReport from "./(components)/research-report";
 import { UserButton } from "@clerk/nextjs";
-import { Atom, ShareIcon, ArrowLeft } from "lucide-react";
+import { Atom, ShareIcon, ArrowLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import type {
@@ -196,7 +196,7 @@ function DeepResearchPage() {
                             {/* Collapsible progress summary */}
                             <details className="mb-6 group">
                                 <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2">
-                                    <span className="text-xs">▶</span>
+                                    <ChevronRight className="w-4 h-4 transition-transform duration-200 group-open:rotate-90" />
                                     <span>View research progress ({session.activity_log?.length || 0} steps)</span>
                                 </summary>
                                 <div className="mt-4">

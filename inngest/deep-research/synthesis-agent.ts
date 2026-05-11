@@ -28,7 +28,7 @@ export async function synthesizeReport(
           ? section.key_findings.map((f, i) => `  ${i + 1}. ${f}`).join("\n")
           : "  No specific findings";
 
-      return `## ${section.section_heading} (${section.section_id})
+      return `## ${section.section_heading}
 Key Findings:
 ${findings}
 

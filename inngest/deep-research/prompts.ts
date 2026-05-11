@@ -12,7 +12,11 @@ Given the user's query, you must:
 
 Rules:
 - Generate between 4 and 8 sections depending on topic complexity
-- Each section should have a clear, descriptive heading
+- Section headings must follow standard research paper conventions:
+  - Use concise, descriptive titles (e.g., "Introduction", "Theoretical Framework", "Comparative Analysis", "Methodology and Evaluation", "Future Directions and Open Challenges")
+  - Do NOT use colons followed by long subtitles (BAD: "Background: Fundamentals of Large Language Models")
+  - Do NOT include parenthetical clarifications (BAD: "Reasoning in LLMs (Current State)")
+  - Keep headings short (2-6 words), authoritative, and professional
 - Search queries should be specific, keyword-focused (as you would type into Google)
 - Avoid redundant queries across sections
 - Order sections logically (background first, conclusions last)

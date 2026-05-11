@@ -1,7 +1,7 @@
 "use client";
 
 import DisplaySummary from "@/app/(components)/display-summary";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import type { CitationEntry } from "@/inngest/deep-research/types";
@@ -41,7 +41,7 @@ function ResearchReport({ report, citations }: ResearchReportProps) {
                         onClick={() => setShowCitations(!showCitations)}
                         className="flex items-center gap-2 text-sm font-semibold text-foreground hover:text-primary transition-colors mb-4"
                     >
-                        <span>{showCitations ? "▼" : "▶"}</span>
+                        <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${showCitations ? "rotate-90" : ""}`} />
                         <span>Sources ({citations.length})</span>
                     </button>
 

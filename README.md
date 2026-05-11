@@ -146,10 +146,11 @@ yarn dev
 - [x] Dynamically Respond and Search based on user query (Trigger search only if necessary) (01/05/2026)
 - [x] add multiple AI models support (04/05/2026)
 - [x] add sessions for each chat (07/05/2026)
-- [ ] Integrate deepSearch with agentic capabilities
+- [x] Integrate deepSearch with agentic capabilities (10/05/2026)
 - [ ] add Finance page to retreive the data from a stock market api and generate a report using LLM
 - [ ] Dedicated pages for each news summary and its corresponding insights originating from the Discover Page.
 - [ ] make sharing button functional
+- [ ] payment and credit system
 - [ ] File uploading and attachments
 - [ ] Audio input
 

@@ -2,8 +2,8 @@
 
 export const AGENT_MODELS = {
   orchestrator: "google/gemini-2.0-flash-lite-001",
-  subAgent: "google/gemini-2.0-flash-lite-001",
-  citationAgent: "google/gemini-2.0-flash-lite-001",
+  subAgent: "nvidia/nemotron-3-super-120b-a12b:free",
+  citationAgent: "z-ai/glm-4.5-air:free",
   synthesisAgent: "google/gemini-2.0-flash-lite-001",
   reviewAgent: "google/gemini-2.0-flash-lite-001",
 } as const;
@@ -107,6 +107,6 @@ export interface DeepResearchSession {
 
 // Constants
 
-export const MAX_ITERATIONS = 2;
+export const MAX_ITERATIONS = 1;
 export const MIN_REPORT_WORDS = 2000;
 export const MAX_REPORT_WORDS = 6000;
