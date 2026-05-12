@@ -2,8 +2,9 @@ import AnswerDisplay from "@/app/(components)/answer-display";
 import ImageDisplay from "@/app/(components)/images-display";
 import SourceListTab from "@/app/(components)/source-list-tab";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/services/supabase";
 import axios from "axios";
+
+
 import {
   LucideImage,
   LucideList,
@@ -118,26 +119,17 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
   // Fetch the latest search records from Supabase
   const GetSearchRecords = useCallback(async () => {
     try {
-      const { data: Library, error } = await supabase
-        .from("Library")
-        .select("*,chats(*)")
-        .eq("libId", libId)
-        .order('id', { foreignTable: 'chats', ascending: true })
+      const response = await axios.get(`/api/search/record?libId=${libId}`);
+      const LibraryData = response.data;
 
-      if (error) {
-        console.error("Error fetching library:", JSON.stringify(error, null, 2));
-        return;
-      }
-
-      if (Library && Library.length > 0) {
-        const libval = Library[0];
-        console.log("Updated library data:", libval);
+      if (LibraryData) {
+        console.log("Updated library data:", LibraryData);
 
         // Check if new chat was added
-        const newChatCount = libval.chats?.length || 0;
+        const newChatCount = LibraryData.chats?.length || 0;
         const hadNewChat = newChatCount > previousChatCountRef.current;
 
-        setSearchResult(libval);
+        setSearchResult(LibraryData);
         previousChatCountRef.current = newChatCount;
 
         // Scroll to new chat when it arrives
@@ -149,6 +141,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
       console.error("Error in GetSearchRecords:", error);
     }
   }, [libId, scrollToLatest]);
+
 
   // Main function to get search results and trigger AI response
   const GetSearchApiResult = async (customInput?: string) => {
@@ -179,25 +172,23 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
         console.log("Intent classified as:", intent);
 
         if (intent === "chat") {
-          // Chat Flow: Skip search, insert empty results
-          const { data, error } = await supabase
-            .from("chats")
-            .insert([
-              {
-                libId: libId,
-                searchResult: [],
-                userSearchInput: searchQuery,
-                intent: "chat"
-              },
-            ])
-            .select();
+          // Chat Flow: Skip search, insert empty results via API
+          const chatRes = await axios.post("/api/search/chat", {
+            libId: libId,
+            searchResult: [],
+            userSearchInput: searchQuery,
+            intent: "chat"
+          });
 
-          if (error) {
-            console.error("Error inserting chat:", error);
+          if (chatRes.status !== 200) {
+            console.error("Error inserting chat");
             isSearchingRef.current = false;
             setLoadingState("idle");
             return;
           }
+
+          const data = chatRes.data;
+
 
           setUserInput("");
           setLoadingState("generating");
@@ -238,25 +229,23 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
                 `https://www.google.com/s2/favicons?domain=${item?.displayLink}&sz=64`,
             })) || [];
 
-          // Insert search results into Supabase chats table
-          const { data, error } = await supabase
-            .from("chats")
-            .insert([
-              {
-                libId: libId,
-                searchResult: formattedSearchResp,
-                userSearchInput: searchQuery,
-                intent: "search"
-              },
-            ])
-            .select();
+          // Insert search results into Supabase via API
+          const chatRes = await axios.post("/api/search/chat", {
+            libId: libId,
+            searchResult: formattedSearchResp,
+            userSearchInput: searchQuery,
+            intent: "search"
+          });
 
-          if (error) {
-            console.error("Error inserting chat:", error);
+          if (chatRes.status !== 200) {
+            console.error("Error inserting chat");
             isSearchingRef.current = false;
             setLoadingState("idle");
             return;
           }
+
+          const data = chatRes.data;
+
 
           // Clear user input after successful search
           setUserInput("");
