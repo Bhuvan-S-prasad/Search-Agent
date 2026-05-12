@@ -6,9 +6,9 @@ import Image from "next/image";
 
 import { useState, KeyboardEvent, useRef, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
-import { supabase } from "@/services/supabase";
-import { v4 as uuidv4 } from "uuid";
+import axios from "axios";
 import { useRouter } from "next/navigation";
+
 import { AIModelsOptions, DEFAULT_MODEL } from "@/services/Shared";
 import {
   Select,
@@ -43,42 +43,17 @@ export default function InputBox() {
     setLoading(true);
 
     if (searchType === "DeepSearch") {
-      // For DeepSearch, create a library entry and start research
+      // For DeepSearch, create a library entry and start research via API
       try {
-        const response = await fetch("/api/deep-research/start", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            query: userSearchInput,
-            userId: user?.id || "",
-            userEmail: user?.primaryEmailAddress?.emailAddress || "",
-          }),
+        const response = await axios.post("/api/deep-research/start", {
+          query: userSearchInput,
         });
 
-        if (!response.ok) {
-          const errorData = await response
-            .json()
-            .catch(() => ({ error: "Unknown error" }));
-          console.error(
-            "Failed to start deep research:",
-            errorData.error || "Unknown error",
-          );
-          setLoading(false);
-          return;
-        }
-
-        const data = await response.json();
-
-        if (data.chatId) {
+        if (response.data.chatId) {
           // Route to deep-research page with chatId (which is the libId)
-          router.push(`/deep-research/${data.chatId}`);
+          router.push(`/deep-research/${response.data.chatId}`);
         } else {
-          console.error(
-            "Failed to start deep research: No chatId in response",
-            data,
-          );
+          console.error("Failed to start deep research: No chatId in response");
           setLoading(false);
         }
       } catch (error) {
@@ -86,30 +61,24 @@ export default function InputBox() {
         setLoading(false);
       }
     } else {
-      // Regular search flow
-      const libid = uuidv4();
+      // Regular search flow via secure API
+      try {
+        const response = await axios.post("/api/search/create", {
+          searchInput: userSearchInput,
+          type: searchType,
+        });
 
-      const { error } = await supabase
-        .from("Library")
-        .insert([
-          {
-            searchInput: userSearchInput,
-            userEmail: user?.primaryEmailAddress?.emailAddress,
-            type: searchType,
-            libId: libid,
-          },
-        ])
-        .select();
-      setLoading(false);
-
-      if (error) {
+        if (response.data) {
+          router.push(`/search/${response.data.libId}?model=${encodeURIComponent(selectedModel)}`);
+        }
+      } catch (error) {
         console.error("Error creating library entry:", error);
-        return;
+      } finally {
+        setLoading(false);
       }
-
-      router.push(`/search/${libid}?model=${encodeURIComponent(selectedModel)}`);
     }
   };
+
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && !event.shiftKey) {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 
 interface AlphaVantageQuote {
   "01. symbol": string;
@@ -22,6 +23,15 @@ interface ErrorResponse {
 const SYMBOLS = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA"];
 
 export async function GET(req: NextRequest) {
+  const { userId } = await auth();
+
+  if (!userId) {
+    return NextResponse.json(
+      { error: "Unauthorized" } as ErrorResponse,
+      { status: 401 }
+    );
+  }
+
   try {
     const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
     
@@ -92,4 +102,4 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
-}
+}

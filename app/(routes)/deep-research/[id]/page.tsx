@@ -1,8 +1,9 @@
 "use client";
 
-import { supabase } from "@/services/supabase";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import axios from "axios";
+
 import ResearchProgress from "./(components)/research-progress";
 import ResearchReport from "./(components)/research-report";
 import { UserButton } from "@clerk/nextjs";
@@ -21,72 +22,37 @@ function DeepResearchPage() {
     const [loading, setLoading] = useState(true);
 
     // Plain function for polling (not wrapped in useCallback)
+    // Secure fetch function using API
     const fetchSession = async () => {
         if (!id) return;
   
-        const { data, error } = await supabase
-            .from("deep_research_sessions")
-            .select("*")
-            .eq("id", id)
-            .single();
-
-        if (error) {
+        try {
+            const response = await axios.post("/api/deep-research/status", {
+                sessionId: id
+            });
+            
+            if (response.data.session) {
+                setSession(response.data.session as unknown as DeepResearchSession);
+            }
+            setLoading(false);
+        } catch (error) {
             console.error("Error fetching session:", error);
             setLoading(false);
-            return;
         }
-
-        setSession(data as unknown as DeepResearchSession);
-        setLoading(false);
     };
 
+
     // Initial fetch — inline to avoid synchronous setState warning
+    // Initial fetch
     useEffect(() => {
         if (!id) return;
-        let cancelled = false;
-
-        supabase
-            .from("deep_research_sessions")
-            .select("*")
-            .eq("id", id)
-            .single()
-            .then(({ data, error }) => {
-                if (cancelled) return;
-                if (error) {
-                    console.error("Error fetching session:", error);
-                } else {
-                    setSession(data as unknown as DeepResearchSession);
-                }
-                setLoading(false);
-            });
-
-        return () => { cancelled = true; };
+        fetchSession();
     }, [id]);
 
-    // Supabase Realtime subscription for live updates
-    useEffect(() => {
-        if (!id) return;
 
-        const channel = supabase
-            .channel(`deep-research-${id}`)
-            .on(
-                "postgres_changes",
-                {
-                    event: "UPDATE",
-                    schema: "public",
-                    table: "deep_research_sessions",
-                    filter: `id=eq.${id}`,
-                },
-                (payload) => {
-                    setSession(payload.new as unknown as DeepResearchSession);
-                }
-            )
-            .subscribe();
+    // Note: Realtime subscription disabled for security (Clerk/Supabase RLS mismatch).
+    // Secure polling is used as the primary update mechanism.
 
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, [id]);
 
     // Fallback polling for environments where realtime might not work
     useEffect(() => {

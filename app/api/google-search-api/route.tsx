@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import axios from "axios";
+import { auth } from "@clerk/nextjs/server";
 
 interface SearchRequestBody {
   searchInput?: string;
@@ -20,6 +21,15 @@ export interface SearchResultItem {
 }
 
 export async function POST(req: Request) {
+  const { userId } = await auth();
+
+  if (!userId) {
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
   try {
     const body: SearchRequestBody = await req.json();
 
@@ -76,3 +86,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
+

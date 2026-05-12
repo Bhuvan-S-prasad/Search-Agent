@@ -1,8 +1,8 @@
 "use client"
 
-import { supabase } from "@/services/supabase";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import axios from "axios";
 import Header from "./(components)/Header";
 import DisplayResult from "./(components)/display-result";
 
@@ -17,22 +17,20 @@ function SearchQueryResult() {
 
     useEffect(() => {
         const GetSearchQueryRecord = async () => {
-            const { data: Library } = await supabase
-            .from('Library')
-            .select('*,chats(*)')
-            .eq('libId', libId);
-
-            
-    
-            if (Library && Library.length > 0) {
-                console.log(Library[0])
-                setSearchInputRecord(Library[0]);
+            try {
+                const response = await axios.get(`/api/search/record?libId=${libId}`);
+                if (response.data) {
+                    console.log(response.data);
+                    setSearchInputRecord(response.data);
+                }
+            } catch (error) {
+                console.error("Error fetching search query record:", error);
             }
         }
-        GetSearchQueryRecord();
+        if (libId) {
+            GetSearchQueryRecord();
+        }
     }, [libId])
-
-    
 
     return(
 

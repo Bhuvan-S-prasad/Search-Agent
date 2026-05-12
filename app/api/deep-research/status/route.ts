@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as supabase } from "@/services/supabaseAdmin";
+import { auth } from "@clerk/nextjs/server";
 
 /**
  * POST /api/deep-research/status
  */
 export async function POST(req: NextRequest) {
+    const { userId } = await auth();
+
+    if (!userId) {
+        return NextResponse.json(
+            { error: "Unauthorized" },
+            { status: 401 }
+        );
+    }
+
     try {
         const { sessionId } = await req.json();
 
@@ -19,11 +29,12 @@ export async function POST(req: NextRequest) {
             .from("deep_research_sessions")
             .select("*")
             .eq("id", sessionId)
+            .eq("user_id", userId) // Ownership check
             .single();
 
         if (error || !session) {
             return NextResponse.json(
-                { error: "Session not found" },
+                { error: "Session not found or unauthorized" },
                 { status: 404 }
             );
         }
@@ -38,3 +49,4 @@ export async function POST(req: NextRequest) {
         );
     }
 }
+
