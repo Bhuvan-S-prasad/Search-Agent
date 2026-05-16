@@ -31,7 +31,10 @@ interface AnalysisResult {
  * Executes Google Search queries by calling the internal API directly.
  */
 async function executeSearch(queries: string[]): Promise<SearchResultItem[]> {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    // Priority: 1. Explicit env var, 2. Vercel's auto-generated URL, 3. Localhost fallback
+    const baseUrl = 
+        process.env.NEXT_PUBLIC_BASE_URL || 
+        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
     console.log(`[DeepResearch][SubAgent] Executing search with ${queries.length} queries:`);
     queries.forEach((q, i) => console.log(`[DeepResearch][SubAgent]   Query ${i+1}: "${q}"`));
