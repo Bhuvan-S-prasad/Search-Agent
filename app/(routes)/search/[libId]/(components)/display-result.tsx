@@ -99,9 +99,9 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
 
   // Helper function to set active tab for a specific chat
   const setActiveTabForChat = (chatId: number, tab: string) => {
-    setActiveTabs(prev => ({
+    setActiveTabs((prev) => ({
       ...prev,
-      [chatId]: tab
+      [chatId]: tab,
     }));
   };
 
@@ -112,7 +112,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
       targetRef.current.scrollIntoView({
         behavior: "smooth",
         block: "start",
-        inline: "nearest"
+        inline: "nearest",
       });
     }
   }, [loadingState]);
@@ -242,127 +242,133 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
     }
   };
 
-
   // Main function to get search results and trigger AI response
   const GetSearchApiResult = async (customInput?: string) => {
-      // Determine which search query to use
-      const searchQuery = customInput || userInput || searchInputRecord?.searchInput;
+    // Determine which search query to use
+    const searchQuery =
+      customInput || userInput || searchInputRecord?.searchInput;
 
-      if (!searchQuery || isSearchingRef.current) {
-        console.log("Skipping search - already in progress or no input");
-        return;
-      }
+    if (!searchQuery || isSearchingRef.current) {
+      console.log("Skipping search - already in progress or no input");
+      return;
+    }
 
-      isSearchingRef.current = true;
-      setLoadingState("planning");
-      setCurrentQuery(searchQuery);
-      console.log("Starting plan for:", searchQuery);
+    isSearchingRef.current = true;
+    setLoadingState("planning");
+    setCurrentQuery(searchQuery);
+    console.log("Starting plan for:", searchQuery);
 
-      // Scroll to loading div immediately
-      setTimeout(() => scrollToLatest(), 100);
+    // Scroll to loading div immediately
+    setTimeout(() => scrollToLatest(), 100);
 
-      try {
-        // Step 1: Combined triage + query planning (single LLM call)
-        const planRes = await axios.post("/api/plan", { 
-          query: searchQuery, 
-          model: selectedModel,
-          libId: libId
+    try {
+      // Step 1: Combined triage + query planning (single LLM call)
+      const planRes = await axios.post("/api/plan", {
+        query: searchQuery,
+        model: selectedModel,
+        libId: libId,
+      });
+      const { intent, queries: rawQueries } = planRes.data;
+      // Fallback to original query if plan returned no queries
+      const searchQueries =
+        rawQueries && rawQueries.length > 0 ? rawQueries : [searchQuery];
+      console.log("Plan result — intent:", intent, "queries:", searchQueries);
+
+      if (intent === "chat") {
+        // Chat Flow: Skip search, insert empty results via API
+        const chatRes = await axios.post("/api/search/chat", {
+          libId: libId,
+          searchResult: [],
+          userSearchInput: searchQuery,
+          intent: "chat",
         });
-        const { intent, queries: rawQueries } = planRes.data;
-        // Fallback to original query if plan returned no queries
-        const searchQueries = (rawQueries && rawQueries.length > 0) ? rawQueries : [searchQuery];
-        console.log("Plan result — intent:", intent, "queries:", searchQueries);
 
-        if (intent === "chat") {
-          // Chat Flow: Skip search, insert empty results via API
-          const chatRes = await axios.post("/api/search/chat", {
-            libId: libId,
-            searchResult: [],
-            userSearchInput: searchQuery,
-            intent: "chat"
-          });
-
-          if (chatRes.status !== 200) {
-            console.error("Error inserting chat");
-            isSearchingRef.current = false;
-            setLoadingState("idle");
-            return;
-          }
-
-          const data = chatRes.data;
-
-          setUserInput("");
-          setLoadingState("generating");
-          await GetSearchRecords();
-
-          if (data && data[0]?.id) {
-            await streamAIResponse([], data[0].id, searchQuery, "chat");
-          }
-        } else {
-          // Search Flow: Execute planned queries
-          setLoadingState("searching");
-          // Get search results from Google API (parallel)
-          const result = await axios.post("/api/google-search-api", {
-            searchInputs: searchQueries,
-            searchType: searchInputRecord?.type ?? "Search",
-          });
-
-          const searchResp = result.data;
-
-          // Format the search results
-          const formattedSearchResp: FormattedSearchItem[] =
-            searchResp?.items?.map((item: SearchItem) => ({
-              title: item?.title || "",
-              description: item?.snippet || "",
-              displayLink: item?.displayLink || "",
-              img:
-                item?.pagemap?.cse_image?.[0]?.src ||
-                item?.pagemap?.cse_thumbnail?.[0]?.src ||
-                `https://www.google.com/s2/favicons?domain=${item?.displayLink}&sz=64`,
-              url: item?.link || "",
-              thumbnail:
-                item?.pagemap?.cse_thumbnail?.[0]?.src ||
-                `https://www.google.com/s2/favicons?domain=${item?.displayLink}&sz=64`,
-            })) || [];
-
-          // Insert search results into Supabase via API
-          const chatRes = await axios.post("/api/search/chat", {
-            libId: libId,
-            searchResult: formattedSearchResp,
-            userSearchInput: searchQuery,
-            intent: "search"
-          });
-
-          if (chatRes.status !== 200) {
-            console.error("Error inserting chat");
-            isSearchingRef.current = false;
-            setLoadingState("idle");
-            return;
-          }
-
-          const data = chatRes.data;
-
-          // Clear user input after successful search
-          setUserInput("");
-
-          // Change state to generating — users can now see search results!
-          setLoadingState("generating");
-
-          // Refresh the UI with the new chat record (shows Sources/Images tabs)
-          await GetSearchRecords();
-
-          // Stream AI response directly (no Inngest, no polling!)
-          if (data && data[0]?.id) {
-            await streamAIResponse(formattedSearchResp, data[0].id, searchQuery, "search");
-          }
+        if (chatRes.status !== 200) {
+          console.error("Error inserting chat");
+          isSearchingRef.current = false;
+          setLoadingState("idle");
+          return;
         }
-      } catch (error) {
-        console.error("Error in GetSearchApiResult:", error);
-        setLoadingState("idle");
-      } finally {
-        isSearchingRef.current = false;
+
+        const data = chatRes.data;
+
+        setUserInput("");
+        setLoadingState("generating");
+        await GetSearchRecords();
+
+        if (data && data[0]?.id) {
+          await streamAIResponse([], data[0].id, searchQuery, "chat");
+        }
+      } else {
+        // Search Flow: Execute planned queries
+        setLoadingState("searching");
+        // Get search results from Google API (parallel)
+        const result = await axios.post("/api/google-search-api", {
+          searchInputs: searchQueries,
+          searchType: searchInputRecord?.type ?? "Search",
+        });
+
+        const searchResp = result.data;
+
+        // Format the search results
+        const formattedSearchResp: FormattedSearchItem[] =
+          searchResp?.items?.map((item: SearchItem) => ({
+            title: item?.title || "",
+            description: item?.snippet || "",
+            displayLink: item?.displayLink || "",
+            img:
+              item?.pagemap?.cse_image?.[0]?.src ||
+              item?.pagemap?.cse_thumbnail?.[0]?.src ||
+              `https://www.google.com/s2/favicons?domain=${item?.displayLink}&sz=64`,
+            url: item?.link || "",
+            thumbnail:
+              item?.pagemap?.cse_thumbnail?.[0]?.src ||
+              `https://www.google.com/s2/favicons?domain=${item?.displayLink}&sz=64`,
+          })) || [];
+
+        // Insert search results into Supabase via API
+        const chatRes = await axios.post("/api/search/chat", {
+          libId: libId,
+          searchResult: formattedSearchResp,
+          userSearchInput: searchQuery,
+          intent: "search",
+        });
+
+        if (chatRes.status !== 200) {
+          console.error("Error inserting chat");
+          isSearchingRef.current = false;
+          setLoadingState("idle");
+          return;
+        }
+
+        const data = chatRes.data;
+
+        // Clear user input after successful search
+        setUserInput("");
+
+        // Change state to generating — users can now see search results!
+        setLoadingState("generating");
+
+        // Refresh the UI with the new chat record (shows Sources/Images tabs)
+        await GetSearchRecords();
+
+        // Stream AI response directly (no Inngest, no polling!)
+        if (data && data[0]?.id) {
+          await streamAIResponse(
+            formattedSearchResp,
+            data[0].id,
+            searchQuery,
+            "search",
+          );
+        }
       }
-    };
+    } catch (error) {
+      console.error("Error in GetSearchApiResult:", error);
+      setLoadingState("idle");
+    } finally {
+      isSearchingRef.current = false;
+    }
+  };
 
   // Handle search button click
   const handleSearch = () => {
@@ -370,7 +376,6 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
       GetSearchApiResult(userInput.trim());
     }
   };
-
 
   // Initialize component — fetch results or trigger new search
   useEffect(() => {
@@ -400,19 +405,40 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
       {/* Animated text generation effect */}
       <div className="space-y-3">
         <div className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-full bg-size-[200%_100%]"></div>
-        <div className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-11/12 bg-size-[200%_100%]" style={{ animationDelay: '0.1s' }}></div>
-        <div className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-10/12 bg-size-[200%_100%]" style={{ animationDelay: '0.2s' }}></div>
+        <div
+          className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-11/12 bg-size-[200%_100%]"
+          style={{ animationDelay: "0.1s" }}
+        ></div>
+        <div
+          className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-10/12 bg-size-[200%_100%]"
+          style={{ animationDelay: "0.2s" }}
+        ></div>
       </div>
 
       <div className="space-y-3 mt-6">
-        <div className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-full bg-size-[200%_100%]" style={{ animationDelay: '0.3s' }}></div>
-        <div className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-9/12 bg-size-[200%_100%]" style={{ animationDelay: '0.4s' }}></div>
+        <div
+          className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-full bg-size-[200%_100%]"
+          style={{ animationDelay: "0.3s" }}
+        ></div>
+        <div
+          className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-9/12 bg-size-[200%_100%]"
+          style={{ animationDelay: "0.4s" }}
+        ></div>
       </div>
 
       <div className="space-y-3 mt-6">
-        <div className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-full bg-size-[200%_100%]" style={{ animationDelay: '0.5s' }}></div>
-        <div className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-10/12 bg-size-[200%_100%]" style={{ animationDelay: '0.6s' }}></div>
-        <div className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-8/12 bg-size-[200%_100%]" style={{ animationDelay: '0.7s' }}></div>
+        <div
+          className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-full bg-size-[200%_100%]"
+          style={{ animationDelay: "0.5s" }}
+        ></div>
+        <div
+          className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-10/12 bg-size-[200%_100%]"
+          style={{ animationDelay: "0.6s" }}
+        ></div>
+        <div
+          className="h-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-8/12 bg-size-[200%_100%]"
+          style={{ animationDelay: "0.7s" }}
+        ></div>
       </div>
 
       {/* Source cards skeleton */}
@@ -421,8 +447,14 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
         <div className="grid grid-cols-1 gap-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="border rounded-lg p-4 space-y-2 bg-white">
-              <div className="h-5 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-3/4 bg-size-[200%_100%]" style={{ animationDelay: `${0.8 + i * 0.1}s` }}></div>
-              <div className="h-3 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-full bg-size-[200%_100%]" style={{ animationDelay: `${0.9 + i * 0.1}s` }}></div>
+              <div
+                className="h-5 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-3/4 bg-size-[200%_100%]"
+                style={{ animationDelay: `${0.8 + i * 0.1}s` }}
+              ></div>
+              <div
+                className="h-3 bg-linear-to-r from-gray-200 via-gray-300 to-gray-200 rounded animate-pulse w-full bg-size-[200%_100%]"
+                style={{ animationDelay: `${0.9 + i * 0.1}s` }}
+              ></div>
             </div>
           ))}
         </div>
@@ -468,13 +500,16 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
   );
 
   // Check if the latest chat is actively streaming
-  const isLatestChatStreaming = streamingChatId !== null &&
+  const isLatestChatStreaming =
+    streamingChatId !== null &&
     searchResult?.chats &&
     (searchResult.chats?.length ?? 0) > 0 &&
-    searchResult.chats[(searchResult.chats.length ?? 0) - 1]?.id === streamingChatId;
+    searchResult.chats[(searchResult.chats.length ?? 0) - 1]?.id ===
+      streamingChatId;
 
   // Check if the latest chat is still generating (waiting for stream to start or no response yet)
-  const isLatestChatGenerating = loadingState === "generating" &&
+  const isLatestChatGenerating =
+    loadingState === "generating" &&
     searchResult?.chats &&
     (searchResult.chats?.length ?? 0) > 0 &&
     !searchResult.chats?.[(searchResult.chats?.length ?? 0) - 1]?.aiResponce &&
@@ -504,23 +539,25 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
               {chat.userSearchInput || searchResult?.searchInput}
             </h2>
             <div className="flex items-center space-x-6 border-b pt-4 pb-2">
-              {chat.intent !== "chat" && tabs.map(({ label, icon: Icon }) => (
-                <button
-                  key={label}
-                  onClick={() => setActiveTabForChat(chat.id, label)}
-                  className={`flex items-center gap-1 relative text-sm font-medium ${chatActiveTab === label
-                    ? "text-black font-semibold"
-                    : "text-gray-500"
+              {chat.intent !== "chat" &&
+                tabs.map(({ label, icon: Icon }) => (
+                  <button
+                    key={label}
+                    onClick={() => setActiveTabForChat(chat.id, label)}
+                    className={`flex items-center gap-1 relative text-sm font-medium ${
+                      chatActiveTab === label
+                        ? "text-black font-semibold"
+                        : "text-gray-500"
                     }`}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span>{label}</span>
-                  {chatActiveTab === label && (
-                    <span className="absolute -bottom-2 left-0 w-full h-0.5 bg-black rounded"></span>
-                  )}
-                </button>
-              ))}
-              
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span>{label}</span>
+                    {chatActiveTab === label && (
+                      <span className="absolute -bottom-2 left-0 w-full h-0.5 bg-black rounded"></span>
+                    )}
+                  </button>
+                ))}
+
               {chat.intent === "chat" && (
                 <div className="flex items-center gap-1 relative text-sm text-black font-semibold">
                   <LucideSparkles className="w-5 h-5" />
@@ -530,16 +567,18 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
               )}
 
               {(showGeneratingState || isThisChatStreaming) && (
-                <div className="ml-auto text-sm text-blue-600 font-medium flex items-center gap-2">
+                <div className="ml-auto text-sm text-gray-900 font-medium flex items-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  {isThisChatStreaming ? "Streaming response..." : "Generating response..."}
+                  {isThisChatStreaming ? "..." : "thinking..."}
                 </div>
               )}
-              {!showGeneratingState && !isThisChatStreaming && chat.intent !== "chat" && (
-                <div className="ml-auto text-sm text-gray-500">
-                  {/* 1 task <span className="ml-1"> -- </span> */}
-                </div>
-              )}
+              {!showGeneratingState &&
+                !isThisChatStreaming &&
+                chat.intent !== "chat" && (
+                  <div className="ml-auto text-sm text-gray-500">
+                    {/* 1 task <span className="ml-1"> -- </span> */}
+                  </div>
+                )}
             </div>
 
             <div>

@@ -39,7 +39,11 @@ async function executeSearch(queries: string[]): Promise<SearchResultItem[]> {
     try {
         const response = await fetch(`${baseUrl}/api/google-search-api`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                // Internal secret so the route bypasses Clerk auth for server-to-server calls
+                "x-internal-secret": process.env.INTERNAL_API_SECRET || "",
+            },
             body: JSON.stringify({ searchInputs: queries }),
         });
 
