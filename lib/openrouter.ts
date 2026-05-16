@@ -173,6 +173,7 @@ export async function streamOpenRouter(
       "X-Title": "NOMI Search Agent",
     },
     body: JSON.stringify(body),
+    cache: "no-store",
   });
 
   if (!response.ok) {

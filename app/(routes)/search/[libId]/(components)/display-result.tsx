@@ -215,10 +215,13 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
             }
 
             if (data.error) {
-              console.error("Stream error:", data.error);
+              console.error("Stream error from server:", data.error);
+              // Refresh from DB in case partial content was saved
+              await GetSearchRecords();
+              break;
             }
-          } catch {
-            // Skip malformed SSE lines
+          } catch (parseErr) {
+            console.warn("Client SSE parse error:", trimmed, parseErr);
           }
         }
       }

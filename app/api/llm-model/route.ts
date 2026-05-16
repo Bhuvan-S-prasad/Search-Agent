@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import { streamOpenRouter } from "@/lib/openrouter";
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { streamOpenRouter, callOpenRouter } from "@/lib/openrouter";
 import { supabaseAdmin as supabase } from "@/services/supabaseAdmin";
 import {
   getRecentHistory,
@@ -180,8 +180,9 @@ Content: ${result.content}
  */
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
+  const user = await currentUser();
 
-  if (!userId) {
+  if (!userId || !user) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },
@@ -190,6 +191,22 @@ export async function POST(req: NextRequest) {
 
   const { searchInput, searchResult, recordId, libId, intent, model } =
     await req.json();
+
+  // IDOR protection: verify the user owns this library before proceeding
+  const userEmail = user.primaryEmailAddress?.emailAddress;
+  const { data: library, error: libError } = await supabase
+    .from("Library")
+    .select("id")
+    .eq("libId", libId)
+    .eq("userEmail", userEmail)
+    .maybeSingle();
+
+  if (libError || !library) {
+    return new Response(JSON.stringify({ error: "Unauthorized access" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
   // Build the appropriate prompt
   let messages: { role: string; content: string }[];
@@ -237,60 +254,80 @@ Just chat with the user as a helpful companion.
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        const llmResponse = await streamOpenRouter({
-          model,
-          messages,
-          temperature: 0.7,
-          max_tokens: maxTokens,
-        });
-
-        if (!llmResponse.body) {
-          throw new Error("No response body from OpenRouter");
-        }
-
-        const reader = llmResponse.body.getReader();
-        const decoder = new TextDecoder();
         let fullText = "";
-        let buffer = "";
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+        // Try streaming first, fall back to non-streaming if it fails
+        try {
+          const llmResponse = await streamOpenRouter({
+            model,
+            messages,
+            temperature: 0.7,
+            max_tokens: maxTokens,
+          });
 
-          buffer += decoder.decode(value, { stream: true });
+          if (!llmResponse.body) {
+            throw new Error("No response body from OpenRouter");
+          }
 
-          // Process complete SSE lines from buffer
-          const lines = buffer.split("\n");
-          // Keep the last (possibly incomplete) line in the buffer
-          buffer = lines.pop() || "";
+          const reader = llmResponse.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
 
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed || trimmed === "data: [DONE]") continue;
-            if (!trimmed.startsWith("data: ")) continue;
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-            try {
-              const json = JSON.parse(trimmed.slice(6));
-              const token = json?.choices?.[0]?.delta?.content;
-              if (token) {
-                fullText += token;
-                // Forward the token to the client
-                controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify({ token })}\n\n`),
-                );
+            buffer += decoder.decode(value, { stream: true });
+
+            // Process complete SSE lines from buffer
+            const lines = buffer.split("\n");
+            // Keep the last (possibly incomplete) line in the buffer
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed || trimmed === "data: [DONE]") continue;
+              if (!trimmed.startsWith("data: ")) continue;
+
+              try {
+                const json = JSON.parse(trimmed.slice(6));
+                const token = json?.choices?.[0]?.delta?.content;
+                if (typeof token === "string" && token.length > 0) {
+                  fullText += token;
+                  // Forward the token to the client
+                  controller.enqueue(
+                    encoder.encode(`data: ${JSON.stringify({ token })}\n\n`),
+                  );
+                }
+              } catch (parseErr) {
+                console.warn("SSE parse error for line:", trimmed, parseErr);
               }
-            } catch {
-              // Skip malformed SSE chunks
             }
+          }
+        } catch (streamError) {
+          // Streaming failed — fall back to non-streaming call
+          console.warn("Streaming failed, falling back to non-streaming:", streamError);
+          const fallbackResult = await callOpenRouter({
+            model,
+            messages,
+            temperature: 0.7,
+            max_tokens: maxTokens,
+          });
+          fullText = fallbackResult.content || "";
+          if (fullText) {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ token: fullText })}\n\n`),
+            );
           }
         }
 
-        // Save the complete response to Supabase
+        // Save the complete response to Supabase (with ownership-scoped update)
         if (fullText) {
           await supabase
             .from("chats")
             .update({ aiResponce: fullText })
-            .eq("id", recordId);
+            .eq("id", recordId)
+            .eq("libId", libId);
         }
 
         // Signal completion
@@ -299,10 +336,10 @@ Just chat with the user as a helpful companion.
         );
         controller.close();
       } catch (error) {
-        console.error("Streaming error:", error);
+        console.error("LLM route error:", error);
         controller.enqueue(
           encoder.encode(
-            `data: ${JSON.stringify({ error: "Streaming failed" })}\n\n`,
+            `data: ${JSON.stringify({ error: "Generation failed" })}\n\n`,
           ),
         );
         controller.close();
