@@ -60,6 +60,7 @@ interface OpenRouterCallOptions {
   temperature?: number;
   max_tokens?: number;
   response_format?: { type: string };
+  signal?: AbortSignal;
 }
 
 interface OpenRouterResponse {
@@ -174,6 +175,7 @@ export async function streamOpenRouter(
     },
     body: JSON.stringify(body),
     cache: "no-store",
+    signal: options.signal,
   });
 
   if (!response.ok) {
