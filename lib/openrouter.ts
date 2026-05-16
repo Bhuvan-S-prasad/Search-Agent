@@ -131,3 +131,56 @@ export async function callOpenRouter(
     usage: data?.usage,
   };
 }
+
+/**
+ * Make a streaming call to the OpenRouter chat completions API.
+ * Returns the raw fetch Response with an SSE body stream.
+ * The caller is responsible for reading and parsing the stream.
+ *
+ * @throws Error if the API key is missing or the request fails.
+ */
+export async function streamOpenRouter(
+  options: OpenRouterCallOptions,
+): Promise<Response> {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENROUTER_API_KEY is not set in environment variables");
+  }
+
+  const model = options.model || DEFAULT_MODEL;
+
+  const body: Record<string, unknown> = {
+    model,
+    messages: options.messages,
+    stream: true,
+  };
+
+  if (options.temperature !== undefined) {
+    body.temperature = options.temperature;
+  }
+  if (options.max_tokens !== undefined) {
+    body.max_tokens = options.max_tokens;
+  }
+  // Note: response_format is not used with streaming
+
+  const response = await fetch(OPENROUTER_BASE_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer":
+        process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000",
+      "X-Title": "NOMI Search Agent",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(
+      `OpenRouter API Error: ${response.status} - ${JSON.stringify(errorData)}`,
+    );
+  }
+
+  return response;
+}

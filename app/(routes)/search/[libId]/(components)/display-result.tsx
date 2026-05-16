@@ -4,7 +4,6 @@ import SourceListTab from "@/app/(components)/source-list-tab";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
 
-
 import {
   LucideImage,
   LucideList,
@@ -71,7 +70,7 @@ const tabs: Tab[] = [
   { label: "Sources", icon: LucideList },
 ];
 
-type LoadingState = "idle" | "triaging" | "planning" | "searching" | "generating";
+type LoadingState = "idle" | "planning" | "searching" | "generating";
 
 function DisplayResult({ searchInputRecord }: DisplayResultProps) {
   const [activeTabs, setActiveTabs] = useState<Record<number, string>>({});
@@ -79,8 +78,10 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
   const [userInput, setUserInput] = useState("");
   const [loadingState, setLoadingState] = useState<LoadingState>("idle");
   const [currentQuery, setCurrentQuery] = useState("");
+  const [streamingText, setStreamingText] = useState("");
+  const [streamingChatId, setStreamingChatId] = useState<number | null>(null);
   const isSearchingRef = useRef(false);
-  const activeIntervalsRef = useRef<Set<NodeJS.Timeout>>(new Set());
+  const abortControllerRef = useRef<AbortController | null>(null);
   const latestChatRef = useRef<HTMLDivElement>(null);
   const loadingDivRef = useRef<HTMLDivElement>(null);
   const previousChatCountRef = useRef(0);
@@ -142,6 +143,102 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
     }
   }, [libId, scrollToLatest]);
 
+  /**
+   * Stream the AI response from /api/llm-model via SSE.
+   * Replaces the old Inngest fire-and-forget + polling approach.
+   */
+  const streamAIResponse = async (
+    formattedSearchResp: FormattedSearchItem[],
+    recordId: number,
+    searchQuery: string,
+    intent: string,
+  ) => {
+    setStreamingChatId(recordId);
+    setStreamingText("");
+
+    // Create an AbortController so we can cancel if the component unmounts
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
+    try {
+      const response = await fetch("/api/llm-model", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          searchInput: searchQuery,
+          searchResult: formattedSearchResp,
+          recordId,
+          libId,
+          intent,
+          model: selectedModel,
+        }),
+        signal: abortController.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No response body");
+
+      const decoder = new TextDecoder();
+      let accumulated = "";
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Process complete SSE lines
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith("data: ")) continue;
+
+          try {
+            const data = JSON.parse(trimmed.slice(6));
+
+            if (data.done) {
+              // Stream complete — refresh from DB to get the saved version
+              await GetSearchRecords();
+              break;
+            }
+
+            if (data.token) {
+              accumulated += data.token;
+              setStreamingText(accumulated);
+            }
+
+            if (data.error) {
+              console.error("Stream error:", data.error);
+            }
+          } catch {
+            // Skip malformed SSE lines
+          }
+        }
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === "AbortError") {
+        console.log("Stream aborted");
+      } else {
+        console.error("Error streaming AI response:", error);
+        // Try to fetch whatever was saved
+        await GetSearchRecords();
+      }
+    } finally {
+      setStreamingChatId(null);
+      setStreamingText("");
+      setLoadingState("idle");
+      setCurrentQuery("");
+      abortControllerRef.current = null;
+    }
+  };
+
 
   // Main function to get search results and trigger AI response
   const GetSearchApiResult = async (customInput?: string) => {
@@ -154,22 +251,24 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
       }
 
       isSearchingRef.current = true;
-      setLoadingState("triaging");
+      setLoadingState("planning");
       setCurrentQuery(searchQuery);
-      console.log("Starting triage for:", searchQuery);
+      console.log("Starting plan for:", searchQuery);
 
       // Scroll to loading div immediately
       setTimeout(() => scrollToLatest(), 100);
 
       try {
-        // Step 1: Triage the query intent
-        const triageRes = await axios.post("/api/triage", { 
+        // Step 1: Combined triage + query planning (single LLM call)
+        const planRes = await axios.post("/api/plan", { 
           query: searchQuery, 
           model: selectedModel,
           libId: libId
         });
-        const intent = triageRes.data?.intent || "search";
-        console.log("Intent classified as:", intent);
+        const { intent, queries: rawQueries } = planRes.data;
+        // Fallback to original query if plan returned no queries
+        const searchQueries = (rawQueries && rawQueries.length > 0) ? rawQueries : [searchQuery];
+        console.log("Plan result — intent:", intent, "queries:", searchQueries);
 
         if (intent === "chat") {
           // Chat Flow: Skip search, insert empty results via API
@@ -189,21 +288,15 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
 
           const data = chatRes.data;
 
-
           setUserInput("");
           setLoadingState("generating");
           await GetSearchRecords();
 
           if (data && data[0]?.id) {
-            await GenerateAIResp([], data[0].id, searchQuery, "chat");
+            await streamAIResponse([], data[0].id, searchQuery, "chat");
           }
         } else {
-          // Search Flow: Plan queries and search
-          setLoadingState("planning");
-          const plannerRes = await axios.post("/api/query-planner", { query: searchQuery, model: selectedModel });
-          const searchQueries = plannerRes.data?.queries || [searchQuery];
-          console.log("Planned queries:", searchQueries);
-
+          // Search Flow: Execute planned queries
           setLoadingState("searching");
           // Get search results from Google API (parallel)
           const result = await axios.post("/api/google-search-api", {
@@ -246,19 +339,18 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
 
           const data = chatRes.data;
 
-
           // Clear user input after successful search
           setUserInput("");
 
-          // Change state to generating - users can now see search results!
+          // Change state to generating — users can now see search results!
           setLoadingState("generating");
 
-          // Refresh the UI with the new chat record (this shows Sources/Images/Videos tabs)
+          // Refresh the UI with the new chat record (shows Sources/Images tabs)
           await GetSearchRecords();
 
-          // Generate AI response asynchronously (Answer tab will show loading)
+          // Stream AI response directly (no Inngest, no polling!)
           if (data && data[0]?.id) {
-            await GenerateAIResp(formattedSearchResp, data[0].id, searchQuery, "search");
+            await streamAIResponse(formattedSearchResp, data[0].id, searchQuery, "search");
           }
         }
       } catch (error) {
@@ -269,62 +361,6 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
       }
     };
 
-  // Generate AI response and poll for completion
-  const GenerateAIResp = async (
-    formattedSearchResp: FormattedSearchItem[],
-    recordId: number,
-    searchQuery: string,
-    intent: string
-  ) => {
-    try {
-      const result = await axios.post("/api/llm-model", {
-        searchInput: searchQuery,
-        searchResult: formattedSearchResp,
-        recordId: recordId,
-        libId: libId,
-        intent: intent,
-        model: selectedModel
-      });
-
-      const runId = result.data;
-      console.log("Started AI job with runId:", runId.ids[0]);
-
-      // Poll for AI response completion
-      const interval = setInterval(async () => {
-        try {
-          const runResp = await axios.post("/api/get-inngest-status", {
-            runId: runId.ids[0],
-          });
-
-          console.log("Job status:", runResp.data);
-
-          if (runResp.data.data[0]?.status === "Completed") {
-            console.log("AI response completed");
-            activeIntervalsRef.current.delete(interval);
-            clearInterval(interval);
-            // Update the UI with the new AI response
-            await GetSearchRecords();
-            setLoadingState("idle");
-            setCurrentQuery("");
-          }
-        } catch (error) {
-          console.error("Error checking status:", error);
-          activeIntervalsRef.current.delete(interval);
-          clearInterval(interval);
-          setLoadingState("idle");
-          setCurrentQuery("");
-        }
-      }, 1000);
-
-      // Track the interval
-      activeIntervalsRef.current.add(interval);
-    } catch (error) {
-      console.error("Error in GenerateAIResp:", error);
-      setLoadingState("idle");
-      setCurrentQuery("");
-    }
-  };
-
   // Handle search button click
   const handleSearch = () => {
     if (userInput.trim()) {
@@ -333,7 +369,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
   };
 
 
-  // Initialize component - fetch results or trigger new search
+  // Initialize component — fetch results or trigger new search
   useEffect(() => {
     // Initialize previous chat count
     previousChatCountRef.current = searchInputRecord?.chats?.length || 0;
@@ -346,15 +382,12 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInputRecord?.searchInput]);
 
-  // Cleanup intervals on unmount
+  // Cleanup on unmount — abort any active stream
   useEffect(() => {
-    const activeIntervals = activeIntervalsRef.current;
     return () => {
-      // Clear all active intervals when component unmounts
-      activeIntervals.forEach((interval) => {
-        clearInterval(interval);
-      });
-      activeIntervals.clear();
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
     };
   }, []);
 
@@ -414,8 +447,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
         ))}
         <div className="ml-auto text-sm text-gray-600 font-medium flex items-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin" />
-          {loadingState === "triaging" && "Understanding intent..."}
-          {loadingState === "planning" && "Planning search queries..."}
+          {loadingState === "planning" && "Planning search..."}
           {loadingState === "searching" && "Searching the web..."}
           {loadingState === "generating" && "Generating answer..."}
         </div>
@@ -432,19 +464,32 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
     </div>
   );
 
-  // Check if the latest chat is still generating
+  // Check if the latest chat is actively streaming
+  const isLatestChatStreaming = streamingChatId !== null &&
+    searchResult?.chats &&
+    (searchResult.chats?.length ?? 0) > 0 &&
+    searchResult.chats[(searchResult.chats.length ?? 0) - 1]?.id === streamingChatId;
+
+  // Check if the latest chat is still generating (waiting for stream to start or no response yet)
   const isLatestChatGenerating = loadingState === "generating" &&
     searchResult?.chats &&
     (searchResult.chats?.length ?? 0) > 0 &&
-    !searchResult.chats?.[(searchResult.chats?.length ?? 0) - 1]?.aiResponce;
+    !searchResult.chats?.[(searchResult.chats?.length ?? 0) - 1]?.aiResponce &&
+    !isLatestChatStreaming;
 
   return (
     <div className="mt-20 mx-auto max-w-2xl xl:max-w-3xl px-6 md:px-10 pb-32">
       {/* Render existing chats */}
       {searchResult?.chats?.map((chat, index) => {
         const isLatestChat = index === (searchResult.chats?.length ?? 0) - 1;
+        const isThisChatStreaming = isLatestChat && isLatestChatStreaming;
         const showGeneratingState = isLatestChat && isLatestChatGenerating;
         const chatActiveTab = getActiveTab(chat.id);
+
+        // For the streaming chat, override the aiResponce with streaming text
+        const displayChat = isThisChatStreaming
+          ? { ...chat, aiResponce: streamingText }
+          : chat;
 
         return (
           <div
@@ -481,13 +526,13 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
                 </div>
               )}
 
-              {showGeneratingState && (
+              {(showGeneratingState || isThisChatStreaming) && (
                 <div className="ml-auto text-sm text-blue-600 font-medium flex items-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Generating response...
+                  {isThisChatStreaming ? "Streaming response..." : "Generating response..."}
                 </div>
               )}
-              {!showGeneratingState && chat.intent !== "chat" && (
+              {!showGeneratingState && !isThisChatStreaming && chat.intent !== "chat" && (
                 <div className="ml-auto text-sm text-gray-500">
                   {/* 1 task <span className="ml-1"> -- </span> */}
                 </div>
@@ -500,7 +545,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
                   {showGeneratingState ? (
                     <AnswerLoadingPlaceholder />
                   ) : (
-                    <AnswerDisplay chat={chat} />
+                    <AnswerDisplay chat={displayChat} />
                   )}
                 </>
               )}
@@ -513,7 +558,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
       })}
 
       {/* Show full page loader only during initial search */}
-      {["triaging", "planning", "searching"].includes(loadingState) && <SearchingLoader />}
+      {["planning", "searching"].includes(loadingState) && <SearchingLoader />}
 
       <div className="bg-white w-full shadow-lg border border-gray-200/60 fixed bottom-6 left-1/2 -translate-x-1/2 rounded-2xl max-w-md lg:max-w-xl xl:max-w-2xl z-50 flex flex-col overflow-hidden">
         <textarea

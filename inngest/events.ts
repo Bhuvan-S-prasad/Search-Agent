@@ -1,3 +1,5 @@
+// ─── Shared Types (used by both Inngest deep-research and direct API routes) ──
+
 export type SearchResultItem = {
     title?: string;
     link?: string;
@@ -5,35 +7,6 @@ export type SearchResultItem = {
     snippet?: string;
     description?: string;
     content?: string;
-};
-
-// Event data payload type for "llm-model" event
-export type LlmModelEventData = {
-    searchInput: string;
-    searchResult: SearchResultItem[];
-    recordId: number;
-    libId: string;
-    model?: string;
-};
-
-// Full event type for Inngest v3 EventSchemas
-export type LlmModelEvent = {
-    name: "llm-model";
-    data: LlmModelEventData;
-};
-
-// Event data payload type for "chat-model" event
-export type ChatModelEventData = {
-    searchInput: string;
-    recordId: number;
-    libId: string;
-    model?: string;
-};
-
-// Full event type for Inngest v3 EventSchemas
-export type ChatModelEvent = {
-    name: "chat-model";
-    data: ChatModelEventData;
 };
 
 // ─── Deep Research Event ────────────────────────────────────
@@ -53,6 +26,4 @@ export type DeepResearchEvent = {
 };
 
 // Event name constants
-export const LLM_MODEL_EVENT = "llm-model" as const;
-export const CHAT_MODEL_EVENT = "chat-model" as const;
 export const DEEP_RESEARCH_EVENT = "deep-research" as const;

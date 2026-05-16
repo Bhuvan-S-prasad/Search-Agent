@@ -1,10 +1,8 @@
 import { Inngest, EventSchemas } from "inngest";
-import type { LlmModelEvent, ChatModelEvent, DeepResearchEvent } from "./events";
+import type { DeepResearchEvent } from "./events";
 
-// Define all event types for type safety
+// Define event types — only deep research uses Inngest now
 type Events = {
-    "llm-model": LlmModelEvent;
-    "chat-model": ChatModelEvent;
     "deep-research": DeepResearchEvent;
 };
 
