@@ -28,42 +28,59 @@ interface AnalysisResult {
 }
 
 /**
- * Executes Google Search queries by calling the internal API directly.
+ * Executes Google Search queries by calling the Google API directly from the server.
  */
 async function executeSearch(queries: string[]): Promise<SearchResultItem[]> {
-    // Priority: 1. Explicit env var, 2. Vercel's auto-generated URL, 3. Localhost fallback
-    const baseUrl = 
-        process.env.NEXT_PUBLIC_BASE_URL || 
-        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
-
     console.log(`[DeepResearch][SubAgent] Executing search with ${queries.length} queries:`);
     queries.forEach((q, i) => console.log(`[DeepResearch][SubAgent]   Query ${i+1}: "${q}"`));
 
+    const apiKey = process.env.GOOGLE_SEARCH_API_KEY;
+    const cx = process.env.CSE_ID;
+
+    if (!apiKey || !cx) {
+        console.error(`[DeepResearch][SubAgent] Error: GOOGLE_SEARCH_API_KEY or CSE_ID environment variables are missing.`);
+        return [];
+    }
+
     try {
-        const response = await fetch(`${baseUrl}/api/google-search-api`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                // Internal secret so the route bypasses Clerk auth for server-to-server calls
-                "x-internal-secret": process.env.INTERNAL_API_SECRET || "",
-            },
-            body: JSON.stringify({ searchInputs: queries }),
+        // Execute all searches in parallel
+        const searchPromises = queries.map(async (query) => {
+            const endpoint = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cx}&q=${encodeURIComponent(query)}`;
+            try {
+                const response = await fetch(endpoint);
+                if (!response.ok) {
+                    console.error(`[DeepResearch][SubAgent] Search API error for "${query}": ${response.statusText}`);
+                    return { items: [] };
+                }
+                const data = await response.json();
+                return data;
+            } catch (err: unknown) {
+                const msg = err instanceof Error ? err.message : "Unknown error";
+                console.error(`[DeepResearch][SubAgent] Network error searching for "${query}":`, msg);
+                return { items: [] };
+            }
         });
 
-        if (!response.ok) {
-            console.error(`[DeepResearch][SubAgent] Search API error: ${response.status} ${response.statusText}`);
-            return [];
+        const results = await Promise.all(searchPromises);
+
+        // Merge and deduplicate results
+        const allItems: SearchResultItem[] = [];
+        const seenUrls = new Set<string>();
+
+        for (const result of results) {
+            const items = result.items || [];
+            for (const item of items) {
+                if (item.link && !seenUrls.has(item.link)) {
+                    seenUrls.add(item.link);
+                    allItems.push(item);
+                }
+            }
         }
 
-        const data = await response.json();
-        const items = data.items || [];
-        console.log(`[DeepResearch][SubAgent] Search returned ${items.length} results`);
-        items.forEach((item: SearchResultItem, i: number) => {
-            console.log(`[DeepResearch][SubAgent]   [${i}] ${item.title} — ${item.link}`);
-        });
-        return items;
+        console.log(`[DeepResearch][SubAgent] Search returned ${allItems.length} deduplicated results`);
+        return allItems;
     } catch (error) {
-        console.error(`[DeepResearch][SubAgent] Failed to execute search:`, error);
+        console.error(`[DeepResearch][SubAgent] Failed to execute parallel search:`, error);
         return [];
     }
 }

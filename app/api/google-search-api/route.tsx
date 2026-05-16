@@ -21,18 +21,10 @@ export interface SearchResultItem {
 }
 
 export async function POST(req: Request) {
-  // Accept either a Clerk session (browser) or the internal secret (Inngest sub-agents)
-  const internalSecret = (req.headers as Headers).get("x-internal-secret");
-  const isInternalCall =
-    internalSecret &&
-    process.env.INTERNAL_API_SECRET &&
-    internalSecret === process.env.INTERNAL_API_SECRET;
-
-  if (!isInternalCall) {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  const { userId } = await auth();
+  
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
