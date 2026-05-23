@@ -1,13 +1,14 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Atom, SearchCheck, Sparkles } from "lucide-react";
+import { ArrowRight, Atom, SearchCheck, Sparkles, Loader2 } from "lucide-react";
 import Image from "next/image";
 
 import { useState, KeyboardEvent, useRef, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { AIModelsOptions, DEFAULT_MODEL } from "@/services/Shared";
 import {
@@ -25,6 +26,7 @@ export default function InputBox() {
     "Search",
   );
   const [loading, setLoading] = useState(false);
+  const [triageState, setTriageState] = useState<"idle" | "triaging" | "chat_detected">("idle");
   const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_MODEL);
   const router = useRouter();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -41,16 +43,43 @@ export default function InputBox() {
 
   const onSearchQuery = async () => {
     setLoading(true);
+    setTriageState("idle");
 
     if (searchType === "DeepSearch") {
-      // For DeepSearch, create a library entry and start research via API
       try {
+        // Step 1: Classify intent via deep research triage
+        setTriageState("triaging");
+        let intent = "research";
+        try {
+          const triageRes = await axios.post("/api/deep-research/triage", {
+            query: userSearchInput,
+          });
+          intent = triageRes.data.intent;
+        } catch (triageError) {
+          // If triage fails, default to research (safer to over-research)
+          console.warn("Triage failed, defaulting to research:", triageError);
+          toast.error("Analysis failed. Defaulting to full research.");
+        }
+        setTriageState("idle");
+
+        if (intent === "chat") {
+          // Not a research query — show message and reset
+          setTriageState("chat_detected");
+          setLoading(false);
+          toast.info("Doesn't look like a research query", {
+            description: "Try a more specific topic like 'compare renewable energy sources'.",
+          });
+          // Auto-clear the message after 4 seconds
+          setTimeout(() => setTriageState("idle"), 4000);
+          return;
+        }
+
+        // Step 2: Intent is "research" — start deep research pipeline
         const response = await axios.post("/api/deep-research/start", {
           query: userSearchInput,
         });
 
         if (response.data.chatId) {
-          // Route to deep-research page with chatId (which is the libId)
           router.push(`/deep-research/${response.data.chatId}`);
         } else {
           console.error("Failed to start deep research: No chatId in response");
@@ -58,6 +87,7 @@ export default function InputBox() {
         }
       } catch (error) {
         console.error("Error starting deep research:", error);
+        setTriageState("idle");
         setLoading(false);
       }
     } else {
@@ -119,8 +149,22 @@ export default function InputBox() {
             onKeyDown={handleKeyDown}
             className="w-full outline-none resize-none overflow-y-auto min-h-7 bg-transparent text-base"
             rows={1}
+            disabled={triageState === "triaging"}
           />
         </div>
+
+        {/* Triage status messages */}
+        {triageState === "triaging" && (
+          <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground animate-pulse">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <span>Analyzing your query...</span>
+          </div>
+        )}
+        {triageState === "chat_detected" && (
+          <div className="mt-2 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            This doesn&apos;t look like a research query. Try a more specific topic like &quot;explain how transformer models work&quot; or &quot;compare renewable energy sources&quot;.
+          </div>
+        )}
 
         <div className="flex items-center justify-between mt-4 pt-4 border-none">
           <div className="flex items-center gap-2">
@@ -167,7 +211,7 @@ export default function InputBox() {
                   onSearchQuery();
                 }
               }}
-              disabled={loading || !userSearchInput.trim()}
+              disabled={loading || !userSearchInput.trim() || triageState === "triaging"}
               size="icon"
             >
               <ArrowRight className="h-5 w-5" />

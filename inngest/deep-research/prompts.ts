@@ -2,7 +2,7 @@ import { MIN_REPORT_WORDS, MAX_REPORT_WORDS } from "./types";
 
 // Orchestrator Planning Prompt
 export function getOrchestratorPlanningPrompt(query: string): string {
-    return `You are a research planning agent. Your job is to analyze a user's research query and create a detailed report structure with targeted search queries.
+  return `You are a research planning agent. Your job is to analyze a user's research query and create a detailed report structure with targeted search queries.
 
 Given the user's query, you must:
 1. Determine the scope and complexity of the topic
@@ -40,11 +40,11 @@ Respond with ONLY a JSON object in this exact format:
 
 // Sub-Agent Research Analysis Prompt
 export function getSubAgentAnalysisPrompt(
-    sectionHeading: string,
-    sectionDescription: string,
-    searchResults: string
+  sectionHeading: string,
+  sectionDescription: string,
+  searchResults: string
 ): string {
-    return `You are a research analyst agent. You have been assigned to research a specific section of a larger report. Analyze the provided search results and extract comprehensive findings.
+  return `You are a research analyst agent. You have been assigned to research a specific section of a larger report. Analyze the provided search results and extract comprehensive findings.
 
 Your section assignment:
 - Heading: "${sectionHeading}"  
@@ -78,7 +78,7 @@ Respond with ONLY a JSON object:
 
 // Citation Agent Prompt
 export function getCitationAgentPrompt(allSources: string): string {
-    return `You are a citation management agent. You receive a list of sources used across multiple research sections. Your job is to deduplicate them and create a clean, indexed citation list.
+  return `You are a citation management agent. You receive a list of sources used across multiple research sections. Your job is to deduplicate them and create a clean, indexed citation list.
 
 Sources from all sections:
 ${allSources}
@@ -108,11 +108,11 @@ Respond with ONLY a JSON object:
 
 // Synthesis Agent Prompt
 export function getSynthesisPrompt(
-    reportTitle: string,
-    sectionFindings: string,
-    citationIndex: string
+  reportTitle: string,
+  sectionFindings: string,
+  citationIndex: string
 ): string {
-    return `You are a research synthesis agent. You must compile section-level research findings into a single, comprehensive, well-structured research report.
+  return `You are a research synthesis agent. You must compile section-level research findings into a single, comprehensive, well-structured research report.
 
 Report Title: "${reportTitle}"
 
@@ -139,7 +139,7 @@ Formatting rules:
 - Use ## for section headings
 - Use **bold** for subsection emphasis
 - Use bullet points for lists (flat, no nesting)
-- Use tables for comparisons
+- Use tables for comparisons. IMPORTANT: Keep all comparison tables highly compact and concise (maximum 6 rows and 3 columns, with short text phrases under 10 words per cell). NEVER write large prose, nested lists, or repetitive text inside table cells. Avoid long formatting separator lines or spacing patterns that can cause generation loops.
 - Use blockquotes for notable quotes from sources
 - Cite sources inline: "text[1]" or "text[1, 2]"
 
@@ -148,7 +148,7 @@ Write the complete research report now:`;
 
 // Review Agent Prompt
 export function getReviewPrompt(report: string, originalQuery: string): string {
-    return `You are a research quality review agent. Evaluate the following research report for completeness, accuracy, and quality.
+  return `You are a research quality review agent. Evaluate the following research report for completeness, accuracy, and quality.
 
 Original Research Query: "${originalQuery}"
 
