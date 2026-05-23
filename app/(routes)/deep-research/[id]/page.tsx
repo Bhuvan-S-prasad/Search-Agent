@@ -102,8 +102,8 @@ function DeepResearchPage() {
         const activeResearchFollowUps = followUpItems.filter(
             (item) =>
                 item.type === "research" &&
-                item.data.session &&
-                !["completed", "failed"].includes(item.data.session.status)
+                (item.data.session === null ||
+                !["completed", "failed"].includes(item.data.session.status))
         );
 
         if (activeResearchFollowUps.length === 0) return;
@@ -294,8 +294,8 @@ function DeepResearchPage() {
     const hasActiveFollowUpResearch = followUpItems.some(
         (item) =>
             item.type === "research" &&
-            item.data.session &&
-            !["completed", "failed"].includes(item.data.session.status)
+            (item.data.session === null ||
+            !["completed", "failed"].includes(item.data.session.status))
     );
 
     // Check if any chat is streaming

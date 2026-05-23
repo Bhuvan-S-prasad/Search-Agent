@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     try {
         const { sessionId, query } = await req.json();
 
-        if (!sessionId || !query?.trim()) {
+        if (typeof sessionId !== "string" || typeof query !== "string" || query.trim() === "") {
             return new Response(
                 JSON.stringify({ error: "sessionId and query are required" }),
                 { status: 400, headers: { "Content-Type": "application/json" } }
@@ -145,15 +145,27 @@ Respond with ONLY a JSON object:
             }
 
             // Dispatch the Inngest orchestrator
-            await inngest.send({
-                name: DEEP_RESEARCH_EVENT,
-                data: {
-                    sessionId: newSession.id,
-                    query: query.trim(),
-                    userEmail,
-                    userId,
-                },
-            });
+            try {
+                await inngest.send({
+                    name: DEEP_RESEARCH_EVENT,
+                    data: {
+                        sessionId: newSession.id,
+                        query: query.trim(),
+                        userEmail,
+                        userId,
+                    },
+                });
+            } catch (dispatchError) {
+                console.error("Failed to dispatch orchestrator event:", dispatchError);
+                await supabase
+                    .from("deep_research_sessions")
+                    .update({ status: "failed" })
+                    .eq("id", newSession.id);
+                return new Response(
+                    JSON.stringify({ error: "Failed to start research orchestrator" }),
+                    { status: 500, headers: { "Content-Type": "application/json" } }
+                );
+            }
 
             return new Response(
                 JSON.stringify({
@@ -213,7 +225,7 @@ Rules:
                         let buffer = "";
 
                         clientSignal.addEventListener("abort", () => {
-                            reader.cancel("client disconnected").catch(() => {});
+                            reader.cancel("client disconnected").catch(() => { });
                         });
 
                         while (true) {
@@ -250,19 +262,23 @@ Rules:
                     } catch (streamError) {
                         // Fallback to non-streaming
                         console.warn("Streaming failed, falling back:", streamError);
-                        const fallbackResult = await callOpenRouter({
-                            model: CHAT_MODEL,
-                            messages,
-                            temperature: 0.5,
-                            max_tokens: 2048,
-                        });
-                        fullText = fallbackResult.content || "";
-                        if (fullText) {
-                            controller.enqueue(
-                                encoder.encode(
-                                    `data: ${JSON.stringify({ type: "chat", token: fullText })}\n\n`
-                                )
-                            );
+                        if (clientSignal.aborted) {
+                            fullText = "";
+                        } else {
+                            const fallbackResult = await callOpenRouter({
+                                model: CHAT_MODEL,
+                                messages,
+                                temperature: 0.5,
+                                max_tokens: 2048,
+                            });
+                            fullText = fallbackResult.content || "";
+                            if (fullText) {
+                                controller.enqueue(
+                                    encoder.encode(
+                                        `data: ${JSON.stringify({ type: "chat", token: fullText })}\n\n`
+                                    )
+                                );
+                            }
                         }
                     }
 

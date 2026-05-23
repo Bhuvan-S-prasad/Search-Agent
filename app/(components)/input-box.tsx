@@ -42,11 +42,12 @@ export default function InputBox() {
   }, [userSearchInput]);
 
   const onSearchQuery = async () => {
+    if (loading || triageState === "triaging") return;
     setLoading(true);
     setTriageState("idle");
 
-    if (searchType === "DeepSearch") {
-      try {
+    try {
+      if (searchType === "DeepSearch") {
         // Step 1: Classify intent via deep research triage
         setTriageState("triaging");
         let intent = "research";
@@ -85,14 +86,8 @@ export default function InputBox() {
           console.error("Failed to start deep research: No chatId in response");
           setLoading(false);
         }
-      } catch (error) {
-        console.error("Error starting deep research:", error);
-        setTriageState("idle");
-        setLoading(false);
-      }
-    } else {
-      // Regular search flow via secure API
-      try {
+      } else {
+        // Regular search flow via secure API
         const response = await axios.post("/api/search/create", {
           searchInput: userSearchInput,
           type: searchType,
@@ -101,11 +96,11 @@ export default function InputBox() {
         if (response.data) {
           router.push(`/search/${response.data.libId}?model=${encodeURIComponent(selectedModel)}`);
         }
-      } catch (error) {
-        console.error("Error creating library entry:", error);
-      } finally {
-        setLoading(false);
       }
+    } catch (error) {
+      console.error("Error during search query:", error);
+      setTriageState("idle");
+      setLoading(false);
     }
   };
 
