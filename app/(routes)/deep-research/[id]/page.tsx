@@ -12,6 +12,7 @@ import { UserButton } from "@clerk/nextjs";
 import { Atom, ShareIcon, ArrowLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import type {
     DeepResearchSession,
     ActivityLogEntry,
@@ -180,6 +181,7 @@ function DeepResearchPage() {
                         },
                     };
                     setFollowUpItems((prev) => [...prev, newFollowUp]);
+                    toast.success("Started follow-up research session");
 
                     // Start polling for the new session immediately
                     const initialSession = await fetchFollowUpSession(data.sessionId);
@@ -275,6 +277,7 @@ function DeepResearchPage() {
                 console.log("Follow-up request aborted");
             } else {
                 console.error("Error processing follow-up:", error);
+                toast.error("Failed to process follow-up request");
             }
             setIsProcessingFollowUp(false);
         } finally {

@@ -8,6 +8,7 @@ import { useState, KeyboardEvent, useRef, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { AIModelsOptions, DEFAULT_MODEL } from "@/services/Shared";
 import {
@@ -57,6 +58,7 @@ export default function InputBox() {
         } catch (triageError) {
           // If triage fails, default to research (safer to over-research)
           console.warn("Triage failed, defaulting to research:", triageError);
+          toast.error("Analysis failed. Defaulting to full research.");
         }
         setTriageState("idle");
 
@@ -64,6 +66,9 @@ export default function InputBox() {
           // Not a research query — show message and reset
           setTriageState("chat_detected");
           setLoading(false);
+          toast.info("Doesn't look like a research query", {
+            description: "Try a more specific topic like 'compare renewable energy sources'.",
+          });
           // Auto-clear the message after 4 seconds
           setTimeout(() => setTriageState("idle"), 4000);
           return;
