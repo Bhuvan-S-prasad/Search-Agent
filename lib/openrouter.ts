@@ -187,3 +187,41 @@ export async function streamOpenRouter(
 
   return response;
 }
+
+/**
+ * Query multiple OpenRouter models in parallel with the same messages.
+ * Returns a Map of model ID → response. Models that fail are logged and omitted.
+ *
+ * This is the TypeScript equivalent of the Python `query_models_parallel`.
+ */
+export async function callOpenRouterParallel(
+  models: readonly string[],
+  messages: { role: string; content: string }[],
+  options?: { temperature?: number; max_tokens?: number },
+): Promise<Map<string, OpenRouterResponse>> {
+  const results = await Promise.allSettled(
+    models.map((model) =>
+      callOpenRouter({
+        model,
+        messages,
+        temperature: options?.temperature,
+        max_tokens: options?.max_tokens,
+      }).then((response) => ({ model, response })),
+    ),
+  );
+
+  const responseMap = new Map<string, OpenRouterResponse>();
+
+  for (const result of results) {
+    if (result.status === "fulfilled") {
+      responseMap.set(result.value.model, result.value.response);
+    } else {
+      console.error(
+        `[Council] Model query failed:`,
+        result.reason?.message || result.reason,
+      );
+    }
+  }
+
+  return responseMap;
+}

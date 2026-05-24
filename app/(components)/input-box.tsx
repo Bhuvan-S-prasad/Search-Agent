@@ -42,6 +42,10 @@ export default function InputBox() {
   }, [userSearchInput]);
 
   const onSearchQuery = async () => {
+    if (!user) {
+      toast.error("Please sign in to use this feature");
+      return;
+    }
     if (loading || triageState === "triaging") return;
     setLoading(true);
     setTriageState("idle");
@@ -99,6 +103,11 @@ export default function InputBox() {
       }
     } catch (error) {
       console.error("Error during search query:", error);
+      if (axios.isAxiosError(error) && (error.response?.status === 401 || error.response?.status === 404)) {
+        toast.error("Please sign in to use this feature");
+      } else {
+        toast.error("An error occurred during search");
+      }
       setTriageState("idle");
       setLoading(false);
     }
@@ -122,8 +131,8 @@ export default function InputBox() {
     searchType === "Search" ? "Search with NOMI" : "Deep Research Agent";
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen w-full pl-0 md:pl-20 px-4 md:px-0 py-8 max-md:pt-20">
-      <div className="mb-8 relative group cursor-default">
+    <div className="flex flex-col items-center justify-center md:justify-center max-md:justify-end min-h-[calc(100vh-3.5rem)] md:min-h-screen w-full px-4 md:px-0 md:pl-20 py-8 max-md:pb-10">
+      <div className="hidden md:block mb-8 relative group cursor-default">
         <div className="absolute inset-0 bg-linear-to-r from-gray-200 to-gray-100 rounded-full blur-md opacity-50 group-hover:opacity-100 transition duration-500"></div>
         <div className="relative inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/60 backdrop-blur-xl border border-gray-200 shadow-sm text-sm font-medium transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-md group-hover:bg-white/90">
           <Sparkles className="h-4 w-4 text-gray-700" />
@@ -132,9 +141,11 @@ export default function InputBox() {
           </span>
         </div>
       </div>
-      <Image src={"/logo.png"} alt="logo" width={250} height={250} />
+      <div className="hidden md:block mb-4">
+        <Image src={"/logo.png"} alt="logo" width={250} height={250} />
+      </div>
 
-      <div className="w-full max-w-2xl mt-8 border rounded-2xl p-5 bg-white shadow-xs">
+      <div className="w-full max-w-2xl mt-8 md:mt-8 max-md:mt-0 border rounded-2xl p-4 md:p-5 bg-white shadow-md">
         <div className="w-full">
           <textarea
             ref={textareaRef}
@@ -161,40 +172,43 @@ export default function InputBox() {
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-4 pt-4 border-none gap-4">
-          <div className="flex items-center gap-2 max-sm:justify-center">
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100/60 gap-2">
+          {/* Modes */}
+          <div className="flex items-center gap-1 shrink-0">
             <button
               onClick={() => setSearchType("Search")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
+              className={`flex items-center justify-center gap-1 px-3 h-8 rounded-xl text-xs transition-colors shrink-0 ${
                 searchType === "Search"
                   ? "bg-primary/10 text-primary font-medium"
-                  : "hover:bg-gray-100 text-gray-600"
+                  : "hover:bg-gray-100 text-gray-500"
               }`}
             >
-              <SearchCheck className="h-4 w-4" />
-              Search
+              <SearchCheck className="h-3.5 w-3.5 shrink-0" />
+              <span>Search</span>
             </button>
             <button
               onClick={() => setSearchType("DeepSearch")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
+              className={`flex items-center justify-center gap-1 px-3 h-8 rounded-xl text-xs transition-colors shrink-0 ${
                 searchType === "DeepSearch"
                   ? "bg-primary/10 text-primary font-medium"
-                  : "hover:bg-gray-100 text-gray-600"
+                  : "hover:bg-gray-100 text-gray-500"
               }`}
             >
-              <Atom className="h-4 w-4" />
-              DeepSearch
+              <Atom className="h-3.5 w-3.5 shrink-0" />
+              <span className="hidden sm:inline">DeepSearch</span>
+              <span className="inline sm:hidden">Deep</span>
             </button>
           </div>
 
-          <div className="flex gap-2 items-center max-sm:justify-between w-full sm:w-auto">
+          {/* Model & Send */}
+          <div className="flex gap-1.5 items-center min-w-0">
             <Select value={selectedModel} onValueChange={setSelectedModel}>
-              <SelectTrigger className="w-[180px] max-sm:flex-1 h-9 border-none shadow-none hover:bg-gray-100 transition-colors focus:ring-0 focus:ring-offset-0">
+              <SelectTrigger className="w-[105px] sm:w-[150px] h-8 border-none shadow-none hover:bg-gray-100 transition-colors focus:ring-0 focus:ring-offset-0 px-2 text-xs truncate shrink-0 flex items-center justify-between gap-1">
                 <SelectValue placeholder="Select Model" />
               </SelectTrigger>
               <SelectContent>
                 {AIModelsOptions.map((model) => (
-                  <SelectItem key={model.ModelApi} value={model.ModelApi}>
+                  <SelectItem key={model.ModelApi} value={model.ModelApi} className="text-xs">
                     {model.name}
                   </SelectItem>
                 ))}
@@ -208,8 +222,9 @@ export default function InputBox() {
               }}
               disabled={loading || !userSearchInput.trim() || triageState === "triaging"}
               size="icon"
+              className="h-8 w-8 rounded-xl shrink-0 flex items-center justify-center"
             >
-              <ArrowRight className="h-5 w-5" />
+              <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
