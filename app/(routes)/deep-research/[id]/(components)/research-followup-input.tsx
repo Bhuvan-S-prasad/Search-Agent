@@ -44,7 +44,7 @@ export default function ResearchFollowupInput({
     const isDisabled = disabled || isProcessing;
 
     return (
-        <div className="bg-white w-full shadow-lg border border-gray-200/60 fixed bottom-6 left-1/2 -translate-x-1/2 rounded-2xl max-w-md lg:max-w-xl xl:max-w-2xl z-50 flex flex-col overflow-hidden">
+        <div className="bg-white w-[calc(100%-2rem)] md:w-full shadow-lg border border-gray-200/60 fixed bottom-6 left-1/2 -translate-x-1/2 rounded-2xl max-w-md lg:max-w-xl xl:max-w-2xl z-50 flex flex-col overflow-hidden">
             <textarea
                 ref={textareaRef}
                 placeholder={

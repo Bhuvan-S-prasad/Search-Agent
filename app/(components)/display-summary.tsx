@@ -206,18 +206,18 @@ function DisplaySummary({
           ),
           ul: ({ children }) => <ul className="mb-6 space-y-2 list-none pl-1">{children}</ul>,
           ol: ({ children }) => <ol className="mb-6 space-y-2 list-decimal pl-6 text-foreground/90">{children}</ol>,
-          li: ({ children, ordered, ...props }: { 
-            children?: React.ReactNode; 
+          li: ({ children, ordered, ...props }: {
+            children?: React.ReactNode;
             ordered?: boolean;
           } & React.LiHTMLAttributes<HTMLLIElement>) => {
-             // If it's an ordered list, use a custom bullet
-             if (ordered) return <li className="pl-2" {...props}>{children}</li>;
-             return (
-               <li className="relative pl-6 flex items-start gap-3" {...props}>
-                 <span className="absolute left-0 top-[0.6em] w-1.5 h-1.5 rounded-full bg-primary/30 shrink-0" />
-                 <span className="flex-1">{children}</span>
-               </li>
-             );
+            // If it's an ordered list, use a custom bullet
+            if (ordered) return <li className="pl-2" {...props}>{children}</li>;
+            return (
+              <li className="relative pl-6 flex items-start gap-3" {...props}>
+                <span className="absolute left-0 top-[0.6em] w-1.5 h-1.5 rounded-full bg-primary/30 shrink-0" />
+                <span className="flex-1">{children}</span>
+              </li>
+            );
           },
           blockquote: ({ children }) => (
             <blockquote className="my-8 pl-6 border-l-2 border-primary/20 italic text-foreground/80 bg-primary/5 py-4 pr-4 rounded-r-lg">
@@ -234,10 +234,10 @@ function DisplaySummary({
           th: ({ children }) => <th className="px-6 py-4 font-semibold text-foreground">{children}</th>,
           td: ({ children }) => <td className="px-6 py-4 border-b border-border/30 text-foreground/80">{children}</td>,
           a: (props) => (
-            <a 
-              className="text-primary font-medium underline underline-offset-4 decoration-primary/30 hover:decoration-primary transition-all" 
-              target="_blank" 
-              {...props} 
+            <a
+              className="text-primary font-medium underline underline-offset-4 decoration-primary/30 hover:decoration-primary transition-all"
+              target="_blank"
+              {...props}
             />
           ),
 
@@ -262,9 +262,9 @@ function DisplaySummary({
               </span>
             );
           },
-          code: ({ inline, className, children, ...props }: { 
-            inline?: boolean; 
-            className?: string; 
+          code: ({ inline, className, children, ...props }: {
+            inline?: boolean;
+            className?: string;
             children?: React.ReactNode;
           } & React.HTMLAttributes<HTMLElement>) => {
             const match = /language-(\w+)/.exec(className || "");

@@ -470,21 +470,25 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
         <h2 className="font-bold text-3xl line-clamp-2">{currentQuery}</h2>
       </div>
 
-      <div className="flex items-center space-x-6 border-b pt-4 pb-2">
-        {tabs.map(({ label, icon: Icon }) => (
-          <div
-            key={label}
-            className="flex items-center gap-1 relative text-sm font-medium text-gray-400"
-          >
-            <Icon className="w-5 h-5" />
-            <span>{label}</span>
-          </div>
-        ))}
-        <div className="ml-auto text-sm text-gray-600 font-medium flex items-center gap-2">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          {loadingState === "planning" && "Planning search..."}
-          {loadingState === "searching" && "Searching the web..."}
-          {loadingState === "generating" && "Generating answer..."}
+      <div className="flex items-center justify-between border-b pt-4 pb-2 gap-2 min-w-0">
+        <div className="flex items-center space-x-4 md:space-x-6 overflow-x-auto overflow-y-hidden scrollbar-hide py-1">
+          {tabs.map(({ label, icon: Icon }) => (
+            <div
+              key={label}
+              className="flex items-center gap-1.5 relative text-sm font-medium text-gray-400 shrink-0"
+            >
+              <Icon className="w-4.5 h-4.5" />
+              <span>{label}</span>
+            </div>
+          ))}
+        </div>
+        <div className="ml-auto text-xs md:text-sm text-gray-600 font-medium flex items-center gap-1.5 shrink-0 pl-2">
+          <Loader2 className="w-4 h-4 animate-spin text-primary" />
+          <span className="hidden sm:inline">
+            {loadingState === "planning" && "Planning search..."}
+            {loadingState === "searching" && "Searching the web..."}
+            {loadingState === "generating" && "Generating answer..."}
+          </span>
         </div>
       </div>
 
@@ -516,7 +520,7 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
     !isLatestChatStreaming;
 
   return (
-    <div className="mt-20 mx-auto max-w-2xl xl:max-w-3xl px-6 md:px-10 pb-32">
+    <div className="mt-20 max-md:mt-32 mx-auto max-w-2xl xl:max-w-3xl px-4 md:px-10 pb-32">
       {/* Render existing chats */}
       {searchResult?.chats?.map((chat, index) => {
         const isLatestChat = index === (searchResult.chats?.length ?? 0) - 1;
@@ -538,44 +542,48 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
             <h2 className="font-bold text-3xl line-clamp-2">
               {chat.userSearchInput || searchResult?.searchInput}
             </h2>
-            <div className="flex items-center space-x-6 border-b pt-4 pb-2">
-              {chat.intent !== "chat" &&
-                tabs.map(({ label, icon: Icon }) => (
-                  <button
-                    key={label}
-                    onClick={() => setActiveTabForChat(chat.id, label)}
-                    className={`flex items-center gap-1 relative text-sm font-medium ${
-                      chatActiveTab === label
-                        ? "text-black font-semibold"
-                        : "text-gray-500"
-                    }`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span>{label}</span>
-                    {chatActiveTab === label && (
-                      <span className="absolute -bottom-2 left-0 w-full h-0.5 bg-black rounded"></span>
-                    )}
-                  </button>
-                ))}
+            <div className="flex items-center justify-between border-b pt-4 pb-2 gap-2 min-w-0">
+              <div className="flex items-center space-x-4 md:space-x-6 overflow-x-auto overflow-y-hidden scrollbar-hide py-1">
+                {chat.intent !== "chat" &&
+                  tabs.map(({ label, icon: Icon }) => (
+                    <button
+                      key={label}
+                      onClick={() => setActiveTabForChat(chat.id, label)}
+                      className={`flex items-center gap-1.5 relative text-sm font-medium shrink-0 ${
+                        chatActiveTab === label
+                          ? "text-black font-semibold"
+                          : "text-gray-500"
+                      }`}
+                    >
+                      <Icon className="w-4.5 h-4.5" />
+                      <span>{label}</span>
+                      {chatActiveTab === label && (
+                        <span className="absolute -bottom-2 left-0 w-full h-0.5 bg-black rounded"></span>
+                      )}
+                    </button>
+                  ))}
 
-              {chat.intent === "chat" && (
-                <div className="flex items-center gap-1 relative text-sm text-black font-semibold">
-                  <LucideSparkles className="w-5 h-5" />
-                  <span>Chat</span>
-                  <span className="absolute -bottom-2 left-0 w-full h-0.5 bg-black rounded"></span>
-                </div>
-              )}
+                {chat.intent === "chat" && (
+                  <div className="flex items-center gap-1.5 relative text-sm text-black font-semibold shrink-0">
+                    <LucideSparkles className="w-4.5 h-4.5" />
+                    <span>Chat</span>
+                    <span className="absolute -bottom-2 left-0 w-full h-0.5 bg-black rounded"></span>
+                  </div>
+                )}
+              </div>
 
               {(showGeneratingState || isThisChatStreaming) && (
-                <div className="ml-auto text-sm text-gray-900 font-medium flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  {isThisChatStreaming ? "..." : "thinking..."}
+                <div className="ml-auto text-xs md:text-sm text-gray-900 font-medium flex items-center gap-1.5 shrink-0 pl-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                  <span className="hidden sm:inline">
+                    {isThisChatStreaming ? "streaming..." : "thinking..."}
+                  </span>
                 </div>
               )}
               {!showGeneratingState &&
                 !isThisChatStreaming &&
                 chat.intent !== "chat" && (
-                  <div className="ml-auto text-sm text-gray-500">
+                  <div className="ml-auto text-sm text-gray-500 shrink-0">
                     {/* 1 task <span className="ml-1"> -- </span> */}
                   </div>
                 )}
@@ -602,7 +610,8 @@ function DisplayResult({ searchInputRecord }: DisplayResultProps) {
       {/* Show full page loader only during initial search */}
       {["planning", "searching"].includes(loadingState) && <SearchingLoader />}
 
-      <div className="bg-white w-full shadow-lg border border-gray-200/60 fixed bottom-6 left-1/2 -translate-x-1/2 rounded-2xl max-w-md lg:max-w-xl xl:max-w-2xl z-50 flex flex-col overflow-hidden">
+      {/* Input box to continue search */}
+      <div className="bg-white w-[calc(100%-2rem)] md:w-full shadow-lg border border-gray-200/60 fixed bottom-6 left-1/2 -translate-x-1/2 rounded-2xl max-w-md lg:max-w-xl xl:max-w-2xl z-50 flex flex-col overflow-hidden">
         <textarea
           placeholder="Ask follow-up..."
           className="outline-none w-full resize-none bg-transparent px-5 pt-4 pb-2 text-[15px] text-gray-800 placeholder:text-gray-400 leading-relaxed"

@@ -309,7 +309,7 @@ function DeepResearchPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center pl-20">
+            <div className="min-h-screen flex items-center justify-center pl-0 md:pl-20 px-4">
                 <div className="flex flex-col items-center gap-4">
                     <div className="relative">
                         <div className="w-12 h-12 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
@@ -323,7 +323,7 @@ function DeepResearchPage() {
 
     if (!session) {
         return (
-            <div className="min-h-screen flex items-center justify-center pl-20">
+            <div className="min-h-screen flex items-center justify-center pl-0 md:pl-20 px-4">
                 <div className="text-center">
                     <h2 className="text-xl font-semibold mb-2">Session Not Found</h2>
                     <p className="text-muted-foreground mb-4">This research session does not exist or has been removed.</p>
@@ -339,29 +339,32 @@ function DeepResearchPage() {
     return (
         <div className="min-h-screen">
             {/* Fixed Header */}
-            <div className="fixed top-0 left-20 right-0 z-40 bg-background/80 backdrop-blur-sm border-b border-border">
-                <div className="flex items-center justify-between px-8 py-3">
-                    <div className="flex gap-3 items-center">
-                        <UserButton />
-                        <div className="flex items-center gap-2 text-primary">
-                            <Atom className="w-4 h-4" />
-                            <span className="text-xs font-medium uppercase tracking-wider">Deep Research</span>
+            <div className="fixed top-14 md:top-0 left-0 md:left-20 right-0 z-30 bg-background/85 backdrop-blur-md border-b border-border/40">
+                <div className="flex items-center justify-between px-4 md:px-8 py-2.5 gap-2">
+                    <div className="flex gap-3 items-center min-w-0">
+                        <div className="hidden md:block shrink-0">
+                            <UserButton />
+                        </div>
+                        <div className="flex items-center gap-2 text-primary shrink-0 min-w-0">
+                            <Atom className="w-4 h-4 shrink-0" />
+                            <span className="text-xs font-semibold uppercase tracking-wider hidden sm:inline">Deep Research</span>
                         </div>
                     </div>
 
-                    <div className="flex-1 flex justify-center max-w-2xl mx-4">
-                        <h2 className="line-clamp-1 text-sm font-medium text-foreground/80">
+                    <div className="flex-1 flex justify-center max-w-2xl mx-2 min-w-0">
+                        <h2 className="line-clamp-1 text-xs md:text-sm font-semibold text-foreground/80">
                             {session.query}
                         </h2>
                     </div>
 
-                    <div className="flex gap-3 items-center">
+                    <div className="flex gap-2 items-center shrink-0">
                         {isCompleted && (
-                            <Button variant="outline" size="sm" onClick={() => {
+                            <Button variant="outline" size="sm" className="h-8 text-xs max-sm:px-2" onClick={() => {
                                 navigator.clipboard.writeText(session.final_report);
+                                toast.success("Report copied to clipboard");
                             }}>
-                                <ShareIcon className="h-4 w-4 mr-2" />
-                                Copy Report
+                                <ShareIcon className="h-3.5 w-3.5 sm:mr-2" />
+                                <span className="hidden sm:inline">Copy Report</span>
                             </Button>
                         )}
                     </div>
@@ -369,8 +372,8 @@ function DeepResearchPage() {
             </div>
 
             {/* Main Content */}
-            <div className="pt-16 pl-20">
-                <div className="max-w-4xl mx-auto px-6 md:px-10 py-8 pb-32">
+            <div className="pt-16 md:pt-16 max-md:pt-36 pl-0 md:pl-20">
+                <div className="max-w-4xl mx-auto px-4 md:px-10 py-8 pb-32 max-md:pt-4">
                     {/* Query Title */}
                     <div className="mb-8">
                         <div className="flex items-center gap-2 text-primary mb-3">

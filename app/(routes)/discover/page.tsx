@@ -133,10 +133,10 @@ function Discover() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background text-foreground ml-25 mt-10">
+    <div className="min-h-screen bg-background text-foreground ml-0 md:ml-25 mt-10 max-md:mt-24 max-md:px-2">
       {/* HEADER */}
-      <div className="border-b border-border">
-        <div className="max-w-[1600px] mx-auto px-8 lg:px-16 xl:px-24 py-6 lg:py-8">
+      <div className="border-b border-border/40">
+        <div className="max-w-[1600px] mx-auto px-4 md:px-8 lg:px-16 xl:px-24 py-6 lg:py-8">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-6 lg:mb-8 gap-4">
             <div className="flex items-center gap-3">
               <Globe className="w-8 h-8" />
@@ -173,7 +173,7 @@ function Discover() {
       </div>
 
       {/* MAIN GRID LAYOUT */}
-      <div className="max-w-[1600px] mx-auto px-8 lg:px-16 xl:px-24 py-8 lg:py-10">
+      <div className="max-w-[1600px] mx-auto px-4 md:px-8 lg:px-16 xl:px-24 py-8 lg:py-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
           {/* LEFT COLUMN - MAIN CONTENT */}
           <div className="lg:col-span-9">

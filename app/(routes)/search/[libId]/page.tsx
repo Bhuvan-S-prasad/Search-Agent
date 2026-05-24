@@ -9,7 +9,7 @@ import DisplayResult from "./(components)/display-result";
 
 
 function SearchQueryResult() {
-    const {libId} = useParams();
+    const { libId } = useParams();
 
 
 
@@ -32,16 +32,16 @@ function SearchQueryResult() {
         }
     }, [libId])
 
-    return(
+    return (
 
         <div>
-            <Header searchInputRecord={searchInputRecord}/>        
-            <div className="px-10 md:px-20 lg:px-36 xl:px-56 mt-15">
+            <Header searchInputRecord={searchInputRecord} />
+            <div className="px-4 md:px-20 lg:px-36 xl:px-56 mt-15 max-md:mt-24">
                 <DisplayResult searchInputRecord={searchInputRecord} />
             </div>
         </div>
     )
 }
 
-export default SearchQueryResult;   
+export default SearchQueryResult;
 

@@ -122,7 +122,7 @@ export default function InputBox() {
     searchType === "Search" ? "Search with NOMI" : "Deep Research Agent";
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen w-full pl-20 py-8">
+    <div className="flex flex-col items-center justify-center min-h-screen w-full pl-0 md:pl-20 px-4 md:px-0 py-8 max-md:pt-20">
       <div className="mb-8 relative group cursor-default">
         <div className="absolute inset-0 bg-linear-to-r from-gray-200 to-gray-100 rounded-full blur-md opacity-50 group-hover:opacity-100 transition duration-500"></div>
         <div className="relative inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/60 backdrop-blur-xl border border-gray-200 shadow-sm text-sm font-medium transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-md group-hover:bg-white/90">
@@ -134,7 +134,7 @@ export default function InputBox() {
       </div>
       <Image src={"/logo.png"} alt="logo" width={250} height={250} />
 
-      <div className="w-full max-w-2xl mt-8 border rounded-2xl p-5 bg-white">
+      <div className="w-full max-w-2xl mt-8 border rounded-2xl p-5 bg-white shadow-xs">
         <div className="w-full">
           <textarea
             ref={textareaRef}
@@ -161,8 +161,8 @@ export default function InputBox() {
           </div>
         )}
 
-        <div className="flex items-center justify-between mt-4 pt-4 border-none">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-4 pt-4 border-none gap-4">
+          <div className="flex items-center gap-2 max-sm:justify-center">
             <button
               onClick={() => setSearchType("Search")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
@@ -187,9 +187,9 @@ export default function InputBox() {
             </button>
           </div>
 
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center max-sm:justify-between w-full sm:w-auto">
             <Select value={selectedModel} onValueChange={setSelectedModel}>
-              <SelectTrigger className="w-[180px] h-9 border-none shadow-none hover:bg-gray-100 transition-colors focus:ring-0 focus:ring-offset-0">
+              <SelectTrigger className="w-[180px] max-sm:flex-1 h-9 border-none shadow-none hover:bg-gray-100 transition-colors focus:ring-0 focus:ring-offset-0">
                 <SelectValue placeholder="Select Model" />
               </SelectTrigger>
               <SelectContent>

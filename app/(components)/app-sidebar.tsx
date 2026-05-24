@@ -91,7 +91,7 @@ export default function AppSidebar() {
 
   return (
     <>
-      <div className="fixed left-0 top-0 h-screen w-20 bg-accent border-r border-border flex flex-col items-center py-4 z-50">
+      <div className="hidden md:flex fixed left-0 top-0 h-screen w-20 bg-accent border-r border-border flex flex-col items-center py-4 z-50">
         <div className="mb-5 mt-3 ml-2 mr-2">
           <Image src={"/logo-navbar.png"} alt="logo" width={150} height={150} />
         </div>
@@ -213,7 +213,7 @@ export default function AppSidebar() {
           </div>
         </div>
       )}
-      <div className="w-20" />
+      <div className="hidden md:block w-20 shrink-0" />
     </>
   );
 }
