@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useUser, UserButton, SignUpButton, SignOutButton } from "@clerk/nextjs";
-import { Menu, X, Home, Compass, BookOpen, Plus, Atom, LogIn, ChevronDown, ChevronUp } from "lucide-react";
+import { Menu, X, Home, Compass, BookOpen, Plus, Atom, LogIn, ChevronDown, ChevronUp, Crown } from "lucide-react";
 import Image from "next/image";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,14 @@ interface LibraryItem {
 }
 
 interface ResearchItem {
+  id: string;
+  query: string;
+  status: string;
+  user_email: string;
+  created_at: string;
+}
+
+interface CouncilItem {
   id: string;
   query: string;
   status: string;
@@ -41,8 +49,10 @@ export default function MobileNav() {
   const [showLibrary, setShowLibrary] = useState(false);
   const [showResearchHistory, setShowResearchHistory] = useState(true);
   const [showSearchHistory, setShowSearchHistory] = useState(true);
+  const [showCouncilHistory, setShowCouncilHistory] = useState(true);
   const [libraryHistory, setLibraryHistory] = useState<LibraryItem[]>([]);
   const [researchHistory, setResearchHistory] = useState<ResearchItem[]>([]);
+  const [councilHistory, setCouncilHistory] = useState<CouncilItem[]>([]);
 
   const path = usePathname();
   const router = useRouter();
@@ -52,7 +62,7 @@ export default function MobileNav() {
     const GetLibraryHistory = async () => {
       try {
         const response = await axios.get("/api/user/history");
-        const { library, research } = response.data;
+        const { library, research, council } = response.data;
 
         if (library) {
           setLibraryHistory(library);
@@ -60,6 +70,10 @@ export default function MobileNav() {
 
         if (research) {
           setResearchHistory(research);
+        }
+
+        if (council) {
+          setCouncilHistory(council);
         }
       } catch (error) {
         console.error("Error fetching history in mobile nav:", error);
@@ -71,10 +85,12 @@ export default function MobileNav() {
     }
   }, [user]);
 
-  // Close drawer on path change
-  useEffect(() => {
+  // Close drawer on path change during rendering (prevents cascading renders)
+  const [prevPath, setPrevPath] = useState(path);
+  if (path !== prevPath) {
+    setPrevPath(path);
     setIsOpen(false);
-  }, [path]);
+  }
 
   const handleNavigate = (targetPath: string) => {
     router.push(targetPath);
@@ -117,7 +133,7 @@ export default function MobileNav() {
 
       {/* Slide-out Drawer Panel */}
       <div
-        className={`fixed inset-0 z-[100] transition-opacity duration-300 ${
+        className={`fixed inset-0 z-100 transition-opacity duration-300 ${
           isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
       >
@@ -194,6 +210,36 @@ export default function MobileNav() {
 
             {showLibrary && (
               <div className="space-y-4 pl-2 mt-1">
+                {/* Council Sessions */}
+                <div>
+                  <button
+                    onClick={() => setShowCouncilHistory(!showCouncilHistory)}
+                    className="w-full flex items-center justify-between text-[11px] font-bold text-muted-foreground/80 py-1 px-2 hover:bg-accent/30 rounded transition-colors"
+                  >
+                    <span>COUNCIL ({councilHistory.length})</span>
+                    {showCouncilHistory ? <ChevronUp className="h-2.5 w-2.5" /> : <ChevronDown className="h-2.5 w-2.5" />}
+                  </button>
+
+                  {showCouncilHistory && (
+                    <div className="mt-1 space-y-1.5 max-h-48 overflow-y-auto">
+                      {councilHistory.length > 0 ? (
+                        councilHistory.map((item) => (
+                          <div
+                            key={item.id}
+                            className="py-2 px-3 hover:bg-accent cursor-pointer transition-colors rounded-lg flex items-center gap-2 border border-transparent hover:border-border/20 group"
+                            onClick={() => handleNavigate(`/council/${item.id}`)}
+                          >
+                            <Crown className="w-3.5 h-3.5 text-amber-500 shrink-0 group-hover:scale-110 transition-transform" />
+                            <h3 className="font-medium text-xs text-foreground/90 truncate group-hover:text-amber-500 transition-colors">{item.query}</h3>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-[11px] text-muted-foreground/60 px-3 py-1">No consultations yet</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {/* Deep Research Items */}
                 <div>
                   <button

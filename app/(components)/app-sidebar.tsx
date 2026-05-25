@@ -1,13 +1,12 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import {
   SignOutButton,
   SignUpButton,
   UserButton,
   useUser,
 } from "@clerk/nextjs";
-import { Home, Compass, BookOpen, LogIn, Plus, Atom } from "lucide-react";
+import { Home, Compass, BookOpen, LogIn, Plus, Atom, Crown } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import Image from "next/image";
@@ -48,6 +47,14 @@ interface ResearchItem {
   created_at: string;
 }
 
+interface CouncilItem {
+  id: string;
+  query: string;
+  status: string;
+  user_email: string;
+  created_at: string;
+}
+
 export default function AppSidebar() {
   const path = usePathname();
   const router = useRouter();
@@ -55,6 +62,7 @@ export default function AppSidebar() {
   const [showLibrary, setShowLibrary] = useState(false);
   const [libraryHistory, setLibraryHistory] = useState<LibraryItem[]>([]);
   const [researchHistory, setResearchHistory] = useState<ResearchItem[]>([]);
+  const [councilHistory, setCouncilHistory] = useState<CouncilItem[]>([]);
 
   const finalMenuOptions = user
     ? MenuOptions.filter((menu) => menu.title !== "SignIn")
@@ -64,7 +72,7 @@ export default function AppSidebar() {
     const GetLibraryHistory = async () => {
       try {
         const response = await axios.get("/api/user/history");
-        const { library, research } = response.data;
+        const { library, research, council } = response.data;
 
         if (library) {
           setLibraryHistory(library);
@@ -72,6 +80,10 @@ export default function AppSidebar() {
 
         if (research) {
           setResearchHistory(research);
+        }
+
+        if (council) {
+          setCouncilHistory(council);
         }
       } catch (error) {
         console.error("Error fetching history:", error);
@@ -91,7 +103,7 @@ export default function AppSidebar() {
 
   return (
     <>
-      <div className="hidden md:flex fixed left-0 top-0 h-screen w-20 bg-accent border-r border-border flex flex-col items-center py-4 z-50">
+      <div className="md:flex fixed left-0 top-0 h-screen w-20 bg-accent border-r border-border flex flex-col items-center py-4 z-50">
         <div className="mb-5 mt-3 ml-2 mr-2">
           <Image src={"/logo-navbar.png"} alt="logo" width={150} height={150} />
         </div>
@@ -165,10 +177,37 @@ export default function AppSidebar() {
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-1">
+              {/* Council of NOMI Sessions */}
+              {councilHistory.length > 0 && (
+                <>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-2 pb-1 flex items-center gap-1">
+                    <Crown className="w-3 h-3 text-amber-500 shrink-0" />
+                    <span>Council</span>
+                  </p>
+                  {councilHistory.map((item) => (
+                    <div
+                      key={item.id}
+                      className="py-1.5 px-3 hover:bg-accent cursor-pointer transition-colors rounded-md group"
+                      onClick={() => {
+                        router.push(`/council/${item.id}`);
+                        setShowLibrary(false);
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Crown className="w-3.5 h-3.5 text-amber-500 shrink-0 group-hover:scale-110 transition-transform" />
+                        <h3 className="font-medium text-sm truncate group-hover:text-amber-500 transition-colors">
+                          {item.query}
+                        </h3>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+
               {/* Deep Research Items */}
               {researchHistory.length > 0 && (
                 <>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-2 pb-1">Research</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-3 pb-1">Research</p>
                   {researchHistory.map((item) => (
                     <div
                       key={item.id}
@@ -202,11 +241,11 @@ export default function AppSidebar() {
                 </>
               )}
 
-              {libraryHistory.length === 0 && researchHistory.length === 0 && (
+              {libraryHistory.length === 0 && researchHistory.length === 0 && councilHistory.length === 0 && (
                 <div className="text-center text-muted-foreground text-sm py-8">
                   <BookOpen className="h-12 w-12 mx-auto mb-2 opacity-50" />
                   <p>No library items yet</p>
-                  <p className="text-xs mt-1">Your searches will appear here</p>
+                  <p className="text-xs mt-1">Your searches and consultations will appear here</p>
                 </div>
               )}
             </div>

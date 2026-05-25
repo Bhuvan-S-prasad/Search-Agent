@@ -27,9 +27,9 @@ export const FREE_MODELS: OpenRouterModel[] = [
     description: "Z-AI's advanced conversational model",
   },  
   {
-    id: "deepseek/deepseek-chat-v3-0324:free",
-    name: "DeepSeek V3",
-    description: "DeepSeek's advanced conversational model",
+    id: "openai/gpt-oss-120b:free",
+    name: "GPT-OSS 120B",
+    description: "DeepSeek's highly efficient V4 mixture-of-experts model",
   },
   {
     id: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
@@ -186,4 +186,42 @@ export async function streamOpenRouter(
   }
 
   return response;
+}
+
+/**
+ * Query multiple OpenRouter models in parallel with the same messages.
+ * Returns a Map of model ID → response. Models that fail are logged and omitted.
+ *
+ * This is the TypeScript equivalent of the Python `query_models_parallel`.
+ */
+export async function callOpenRouterParallel(
+  models: readonly string[],
+  messages: { role: string; content: string }[],
+  options?: { temperature?: number; max_tokens?: number },
+): Promise<Map<string, OpenRouterResponse>> {
+  const results = await Promise.allSettled(
+    models.map((model) =>
+      callOpenRouter({
+        model,
+        messages,
+        temperature: options?.temperature,
+        max_tokens: options?.max_tokens,
+      }).then((response) => ({ model, response })),
+    ),
+  );
+
+  const responseMap = new Map<string, OpenRouterResponse>();
+
+  for (const result of results) {
+    if (result.status === "fulfilled") {
+      responseMap.set(result.value.model, result.value.response);
+    } else {
+      console.error(
+        `[Council] Model query failed:`,
+        result.reason?.message || result.reason,
+      );
+    }
+  }
+
+  return responseMap;
 }
