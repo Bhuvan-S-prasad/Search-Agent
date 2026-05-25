@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { supabaseAdmin as supabase } from "@/services/supabaseAdmin";
+import { CouncilItem } from "@/types";
 
 export async function GET() {
     const { userId } = await auth();
@@ -40,14 +41,19 @@ export async function GET() {
         if (researchError) throw researchError;
 
         // Fetch Council Sessions History
-        const { data: councilHistory, error: councilError } = await supabase
+        let councilHistory: Omit<CouncilItem, "user_email">[] = [];
+        const { data: councilData, error: councilError } = await supabase
             .from("council_sessions")
-            .select("id, query, status, user_email, created_at")
+            .select("id, query, status, created_at")
             .eq("user_email", userEmail)
             .order("created_at", { ascending: false })
             .limit(10);
 
-        if (councilError) throw councilError;
+        if (councilError) {
+            console.error("Error fetching council history:", councilError);
+        } else {
+            councilHistory = councilData || [];
+        }
 
         return NextResponse.json({
             library: libraryHistory || [],

@@ -122,6 +122,12 @@ function CouncilPage() {
           // Session already processed — just fetch the latest state
           console.log("[Council] Session already processed, fetching state...");
           sseStartedRef.current = false;
+          try {
+            await fetchSession();
+          } catch (fetchErr) {
+            console.error("[Council] Error fetching session after 409:", fetchErr);
+            toast.error("Failed to refresh council session state.");
+          }
           return;
         }
         throw new Error(errorData.error || `HTTP ${response.status}`);

@@ -8,6 +8,7 @@
 
 export type CouncilStatus =
   | "collecting"   // Stage 1: gathering individual responses
+  | "running"      // Claimed status / running
   | "ranking"      // Stage 2: peer review / ranking
   | "synthesizing" // Stage 3: chairman synthesis
   | "completed"

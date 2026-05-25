@@ -7,6 +7,7 @@ import { Menu, X, Home, Compass, BookOpen, Plus, Atom, LogIn, ChevronDown, Chevr
 import Image from "next/image";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
+import { CouncilItem } from "@/types";
 
 interface LibraryItem {
   id: number;
@@ -16,14 +17,6 @@ interface LibraryItem {
 }
 
 interface ResearchItem {
-  id: string;
-  query: string;
-  status: string;
-  user_email: string;
-  created_at: string;
-}
-
-interface CouncilItem {
   id: string;
   query: string;
   status: string;
@@ -85,7 +78,7 @@ export default function MobileNav() {
     }
   }, [user]);
 
-  // Close drawer on path change during rendering (prevents cascading renders)
+  // Close drawer synchronously on path change
   const [prevPath, setPrevPath] = useState(path);
   if (path !== prevPath) {
     setPrevPath(path);

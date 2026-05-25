@@ -18,6 +18,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Nomi",
   description: "Nomi is a search assistant that helps you find information and answer questions.",
+  icons: [
+    {
+      url: "https://ik.imagekit.io/wq68aygdr/logo.png?updatedAt=1779704484135",
+    },
+  ],
 };
 
 export default function RootLayout({

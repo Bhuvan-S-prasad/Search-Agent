@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        console.log(`[Council] Session ${session.id} created for query: "${query.trim().substring(0, 80)}..."`);
+        console.log(`[Council] Session ${session.id} created. Metadata: query_length=${query.trim().length}, user_id=${userId}`);
 
         return NextResponse.json({ sessionId: session.id });
 

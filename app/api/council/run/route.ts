@@ -60,10 +60,21 @@ export async function POST(req: NextRequest) {
         );
     }
 
-    // Prevent re-running completed/failed sessions
-    if (session.status !== "collecting") {
+    // Atomically claim the session by updating its status from "collecting" to "running"
+    const { data: updatedSession, error: claimError } = await supabase
+        .from("council_sessions")
+        .update({
+            status: "running",
+            updated_at: new Date().toISOString(),
+        })
+        .eq("id", sessionId)
+        .eq("status", "collecting")
+        .select("status");
+
+    // If no row was updated, it means the status was not "collecting" (already claimed/running/completed/failed)
+    if (claimError || !updatedSession || updatedSession.length === 0) {
         return new Response(
-            JSON.stringify({ error: "Session already processed", status: session.status }),
+            JSON.stringify({ error: "Session already processed", status: session?.status }),
             { status: 409, headers: { "Content-Type": "application/json" } }
         );
     }
@@ -133,7 +144,7 @@ export async function POST(req: NextRequest) {
                 }
 
                 // Persist Stage 1 results & update status
-                await supabase
+                const { error: stage1Error } = await supabase
                     .from("council_sessions")
                     .update({
                         stage1_results: stage1Results,
@@ -141,6 +152,10 @@ export async function POST(req: NextRequest) {
                         updated_at: new Date().toISOString(),
                     })
                     .eq("id", sessionId);
+
+                if (stage1Error) {
+                    throw new Error(`Failed to persist Stage 1 results: ${stage1Error.message}`);
+                }
 
                 sendEvent(controller, {
                     stage: 1,
@@ -206,7 +221,7 @@ export async function POST(req: NextRequest) {
                 });
 
                 // Persist Stage 2 results & update status
-                await supabase
+                const { error: stage2Error } = await supabase
                     .from("council_sessions")
                     .update({
                         stage2_results: stage2Results,
@@ -216,6 +231,10 @@ export async function POST(req: NextRequest) {
                         updated_at: new Date().toISOString(),
                     })
                     .eq("id", sessionId);
+
+                if (stage2Error) {
+                    throw new Error(`Failed to persist Stage 2 results: ${stage2Error.message}`);
+                }
 
                 sendEvent(controller, {
                     stage: 2,
@@ -263,7 +282,7 @@ export async function POST(req: NextRequest) {
                 });
 
                 // Persist Stage 3 result & mark completed
-                await supabase
+                const { error: stage3Error } = await supabase
                     .from("council_sessions")
                     .update({
                         stage3_result: stage3Result,
@@ -271,6 +290,10 @@ export async function POST(req: NextRequest) {
                         updated_at: new Date().toISOString(),
                     })
                     .eq("id", sessionId);
+
+                if (stage3Error) {
+                    throw new Error(`Failed to persist Stage 3 results: ${stage3Error.message}`);
+                }
 
                 sendEvent(controller, {
                     stage: 3,
@@ -323,11 +346,15 @@ export async function POST(req: NextRequest) {
  * Helper to update session status in Supabase.
  */
 async function updateSessionStatus(sessionId: string, status: string) {
-    await supabase
+    const { error } = await supabase
         .from("council_sessions")
         .update({
             status,
             updated_at: new Date().toISOString(),
         })
         .eq("id", sessionId);
+
+    if (error) {
+        throw new Error(`Failed to update session status to ${status}: ${error.message}`);
+    }
 }

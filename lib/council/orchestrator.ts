@@ -176,10 +176,7 @@ Provide a clear, well-reasoned final answer that represents the council's collec
     };
   } catch (error) {
     console.error("[Council] Chairman synthesis failed:", error);
-    return {
-      model: CHAIRMAN_MODEL,
-      response: "Error: Unable to generate final synthesis. The chairman model encountered an issue.",
-    };
+    throw error;
   }
 }
 

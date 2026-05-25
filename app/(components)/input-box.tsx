@@ -94,6 +94,8 @@ export default function InputBox() {
           router.push(`/council/${response.data.sessionId}`);
         } else {
           console.error("Failed to start council: No sessionId in response");
+          toast.error("Failed to initiate Council session. Please try again.");
+          setTriageState("idle");
           setLoading(false);
         }
       } else if (searchType === "DeepSearch") {
@@ -148,7 +150,7 @@ export default function InputBox() {
       }
     } catch (error) {
       console.error("Error during search query:", error);
-      if (axios.isAxiosError(error) && (error.response?.status === 401 || error.response?.status === 404)) {
+      if (axios.isAxiosError(error) && (error.response?.status === 401 || error.response?.status === 403)) {
         toast.error("Please sign in to use this feature");
       } else {
         toast.error("An error occurred during search");

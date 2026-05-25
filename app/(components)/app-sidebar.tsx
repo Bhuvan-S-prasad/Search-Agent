@@ -11,6 +11,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import axios from "axios";
+import { CouncilItem } from "@/types";
 
 
 const MenuOptions = [
@@ -40,14 +41,6 @@ interface LibraryItem {
 }
 
 interface ResearchItem {
-  id: string;
-  query: string;
-  status: string;
-  user_email: string;
-  created_at: string;
-}
-
-interface CouncilItem {
   id: string;
   query: string;
   status: string;
@@ -103,7 +96,7 @@ export default function AppSidebar() {
 
   return (
     <>
-      <div className="md:flex fixed left-0 top-0 h-screen w-20 bg-accent border-r border-border flex flex-col items-center py-4 z-50">
+      <div className="hidden md:flex fixed left-0 top-0 h-screen w-20 bg-accent border-r border-border flex flex-col items-center py-4 z-50">
         <div className="mb-5 mt-3 ml-2 mr-2">
           <Image src={"/logo-navbar.png"} alt="logo" width={150} height={150} />
         </div>

@@ -29,7 +29,7 @@ export const FREE_MODELS: OpenRouterModel[] = [
   {
     id: "openai/gpt-oss-120b:free",
     name: "GPT-OSS 120B",
-    description: "DeepSeek's highly efficient V4 mixture-of-experts model",
+    description: "OpenRouter GPT-OSS 120B model — a large open-source language model",
   },
   {
     id: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",

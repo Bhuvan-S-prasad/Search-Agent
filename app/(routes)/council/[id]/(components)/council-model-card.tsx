@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { getModelDisplayInfo } from "@/lib/council/config";
 import ReactMarkdown from "react-markdown";
@@ -101,8 +101,14 @@ function CouncilModelCard({ modelId, response, isLoading, index }: CouncilModelC
                     {children}
                   </li>
                 ),
-                code: ({ children }) => (
-                  <code className="bg-muted/50 px-1 py-0.5 rounded text-xs font-mono">{children}</code>
+                code: ({ inline, children }: { inline?: boolean; children?: React.ReactNode }) => (
+                  inline ? (
+                    <code className="bg-muted/50 px-1 py-0.5 rounded text-xs font-mono">{children}</code>
+                  ) : (
+                    <pre className="bg-muted/50 p-3 rounded-lg overflow-x-auto my-2 border border-border/50">
+                      <code className="text-xs font-mono text-foreground block">{children}</code>
+                    </pre>
+                  )
                 ),
                 strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
               }}
