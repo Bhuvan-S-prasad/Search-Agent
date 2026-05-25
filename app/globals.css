@@ -138,3 +138,24 @@
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+/* Custom premium thin scrollbar for Council model cards */
+.council-model-response::-webkit-scrollbar {
+  width: 4px;
+}
+.council-model-response::-webkit-scrollbar-track {
+  background: transparent;
+}
+.council-model-response::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
+}
+.council-model-response::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+  opacity: 0.7;
+}
+/* Firefox modern standard scrollbar styling */
+.council-model-response {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}

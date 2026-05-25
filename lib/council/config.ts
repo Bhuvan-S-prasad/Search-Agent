@@ -10,8 +10,8 @@
 export const COUNCIL_MODELS = [
   "google/gemini-2.0-flash-lite-001",
   "z-ai/glm-4.5-air:free",
-  "deepseek/deepseek-chat-v3-0324:free",
-  "qwen/qwen3-next-80b-a3b-instruct:free",
+  "openai/gpt-oss-120b:free",
+  "arcee-ai/trinity-large-thinking:free",
 ] as const;
 
 // ── Chairman (synthesizes the final verdict) ────────────────
@@ -50,23 +50,23 @@ export const MODEL_DISPLAY_INFO: Record<string, ModelDisplayInfo> = {
     borderColor: "border-emerald-500/20",
     emoji: "◆",
   },
-  "deepseek/deepseek-chat-v3-0324:free": {
-    id: "deepseek/deepseek-chat-v3-0324:free",
-    name: "DeepSeek V3",
-    shortName: "DeepSeek",
+  "openai/gpt-oss-120b:free": {
+    id: "openai/gpt-oss-120b:free",
+    name: "GPT-OSS 120B",
+    shortName: "GPT-OSS",
     accentColor: "text-violet-500",
     bgColor: "bg-violet-500/8",
     borderColor: "border-violet-500/20",
     emoji: "◈",
   },
-  "qwen/qwen3-next-80b-a3b-instruct:free": {
-    id: "qwen/qwen3-next-80b-a3b-instruct:free",
-    name: "Qwen 3",
-    shortName: "Qwen",
-    accentColor: "text-amber-500",
-    bgColor: "bg-amber-500/8",
-    borderColor: "border-amber-500/20",
-    emoji: "⬡",
+  "arcee-ai/trinity-large-thinking:free": {
+    id: "arcee-ai/trinity-large-thinking:free",
+    name: "Arcee Trinity Large",
+    shortName: "Arcee",
+    accentColor: "text-sky-500",
+    bgColor: "bg-sky-500/8",
+    borderColor: "border-sky-500/20",
+    emoji: "▲",
   },
   "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free": {
     id: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",

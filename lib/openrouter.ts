@@ -27,9 +27,9 @@ export const FREE_MODELS: OpenRouterModel[] = [
     description: "Z-AI's advanced conversational model",
   },  
   {
-    id: "deepseek/deepseek-chat-v3-0324:free",
-    name: "DeepSeek V3",
-    description: "DeepSeek's advanced conversational model",
+    id: "openai/gpt-oss-120b:free",
+    name: "GPT-OSS 120B",
+    description: "DeepSeek's highly efficient V4 mixture-of-experts model",
   },
   {
     id: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",

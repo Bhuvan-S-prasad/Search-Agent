@@ -39,9 +39,20 @@ export async function GET() {
 
         if (researchError) throw researchError;
 
+        // Fetch Council Sessions History
+        const { data: councilHistory, error: councilError } = await supabase
+            .from("council_sessions")
+            .select("id, query, status, user_email, created_at")
+            .eq("user_email", userEmail)
+            .order("created_at", { ascending: false })
+            .limit(10);
+
+        if (councilError) throw councilError;
+
         return NextResponse.json({
             library: libraryHistory || [],
-            research: researchHistory || []
+            research: researchHistory || [],
+            council: councilHistory || []
         });
 
     } catch (error) {
