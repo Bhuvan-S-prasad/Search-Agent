@@ -6,7 +6,7 @@ import {
   UserButton,
   useUser,
 } from "@clerk/nextjs";
-import { Home, Compass, BookOpen, LogIn, Plus, Atom, Crown } from "lucide-react";
+import { Home, Compass, BookOpen, LogIn, Plus, Atom, Crown, Search } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import Image from "next/image";
@@ -200,16 +200,21 @@ export default function AppSidebar() {
               {/* Deep Research Items */}
               {researchHistory.length > 0 && (
                 <>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-3 pb-1">Research</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-3 pb-1 flex items-center gap-1">
+                    <Atom className="w-3 h-3 text-purple-500 shrink-0" />
+                    <span>Research</span>
+                  </p>
                   {researchHistory.map((item) => (
                     <div
                       key={item.id}
-                      className="py-1.5 px-3 hover:bg-accent cursor-pointer transition-colors rounded-md"
+                      className="py-1.5 px-3 hover:bg-accent cursor-pointer transition-colors rounded-md group"
                       onClick={() => { router.push(`/deep-research/${item.id}`); setShowLibrary(false); }}
                     >
                       <div className="flex items-center gap-2">
-                        <Atom className="w-3 h-3 text-primary shrink-0" />
-                        <h3 className="font-medium text-sm truncate">{item.query}</h3>
+                        <Atom className="w-3.5 h-3.5 text-purple-500 shrink-0 group-hover:scale-110 transition-transform" />
+                        <h3 className="font-medium text-sm truncate group-hover:text-purple-500 transition-colors">
+                          {item.query}
+                        </h3>
                       </div>
                     </div>
                   ))}
@@ -219,16 +224,22 @@ export default function AppSidebar() {
               {/* Regular Search Items */}
               {libraryHistory.length > 0 && (
                 <>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-3 pb-1">Searches</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pt-3 pb-1 flex items-center gap-1">
+                    <Search className="w-3 h-3 text-blue-500 shrink-0" />
+                    <span>Searches</span>
+                  </p>
                   {libraryHistory.map((item, index) => (
                     <div
                       key={index}
-                      className="py-1.5 px-3 hover:bg-accent cursor-pointer transition-colors rounded-md"
+                      className="py-1.5 px-3 hover:bg-accent cursor-pointer transition-colors rounded-md group"
                       onClick={() => handleLibraryClick(item.libId)}
                     >
-                      <h3 className="font-medium text-sm truncate">
-                        {item.searchInput}
-                      </h3>
+                      <div className="flex items-center gap-2">
+                        <Search className="w-3.5 h-3.5 text-blue-500 shrink-0 group-hover:scale-110 transition-transform" />
+                        <h3 className="font-medium text-sm truncate group-hover:text-blue-500 transition-colors">
+                          {item.searchInput}
+                        </h3>
+                      </div>
                     </div>
                   ))}
                 </>

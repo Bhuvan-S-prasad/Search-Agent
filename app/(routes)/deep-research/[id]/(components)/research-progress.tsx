@@ -76,9 +76,9 @@ function ResearchProgress({ activityLog, status, reportPlan }: ResearchProgressP
                 </div>
                 {isActive && (
                     <div className="flex gap-1.5 items-center">
-                        <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" style={{ color: "var(--color-primary)" }} />
-                        <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" style={{ color: "var(--color-primary)", animationDelay: "0.2s" }} />
-                        <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" style={{ color: "var(--color-primary)", animationDelay: "0.4s" }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-purple-600 animate-pulse" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-purple-600 animate-pulse" style={{ animationDelay: "0.2s" }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-purple-600 animate-pulse" style={{ animationDelay: "0.4s" }} />
                     </div>
                 )}
             </div>
@@ -88,7 +88,7 @@ function ResearchProgress({ activityLog, status, reportPlan }: ResearchProgressP
                 <div className="rounded-xl border border-border bg-card overflow-hidden">
                     <div className="px-4 py-3 border-b border-border bg-muted/30">
                         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                            <FileText className="w-4 h-4 text-primary" />
+                            <FileText className="w-4 h-4 text-purple-600" />
                             Report Structure
                             <span className="text-xs font-normal text-muted-foreground ml-auto">
                                 {reportPlan.sections.length} sections
@@ -155,7 +155,7 @@ function ResearchProgress({ activityLog, status, reportPlan }: ResearchProgressP
             <div className="rounded-xl border border-border bg-card overflow-hidden">
                 <div className="px-4 py-3 border-b border-border bg-muted/30">
                     <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-primary" />
+                        <Clock className="w-4 h-4 text-purple-600" />
                         Activity Log
                         <span className="text-xs font-normal text-muted-foreground ml-auto">
                             {activityLog.length} events
@@ -182,8 +182,8 @@ function ResearchProgress({ activityLog, status, reportPlan }: ResearchProgressP
                                         }`}>
                                             {isLatest ? (
                                                 <>
-                                                    <span className="absolute inset-0 rounded-full bg-primary/30 animate-ping" />
-                                                    <span className="relative w-2.5 h-2.5 rounded-full bg-primary ring-2 ring-background" />
+                                                    <span className="absolute inset-0 rounded-full bg-purple-500/30 animate-ping" />
+                                                    <span className="relative w-2.5 h-2.5 rounded-full bg-purple-500 ring-2 ring-background" />
                                                 </>
                                             ) : (
                                                 <span className={`w-2 h-2 rounded-full ring-2 ring-background ${
@@ -225,7 +225,7 @@ function ResearchProgress({ activityLog, status, reportPlan }: ResearchProgressP
                             {isActive && (
                                 <div className="relative pl-7">
                                     <div className="absolute left-0 top-3 -translate-x-1/2 z-10">
-                                        <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-600" />
                                     </div>
                                     <div className="rounded-lg px-3 py-2.5">
                                         <div className="flex items-center gap-2">

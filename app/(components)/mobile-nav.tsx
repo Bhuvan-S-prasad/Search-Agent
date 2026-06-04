@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useUser, UserButton, SignUpButton, SignOutButton } from "@clerk/nextjs";
-import { Menu, X, Home, Compass, BookOpen, Plus, Atom, LogIn, ChevronDown, ChevronUp, Crown } from "lucide-react";
+import { Menu, X, Home, Compass, BookOpen, Plus, Atom, LogIn, ChevronDown, ChevronUp, Crown, Search } from "lucide-react";
 import Image from "next/image";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
@@ -209,7 +209,10 @@ export default function MobileNav() {
                     onClick={() => setShowCouncilHistory(!showCouncilHistory)}
                     className="w-full flex items-center justify-between text-[11px] font-bold text-muted-foreground/80 py-1 px-2 hover:bg-accent/30 rounded transition-colors"
                   >
-                    <span>COUNCIL ({councilHistory.length})</span>
+                    <span className="flex items-center gap-1.5">
+                      <Crown className="w-3 h-3 text-amber-500 shrink-0" />
+                      COUNCIL ({councilHistory.length})
+                    </span>
                     {showCouncilHistory ? <ChevronUp className="h-2.5 w-2.5" /> : <ChevronDown className="h-2.5 w-2.5" />}
                   </button>
 
@@ -239,7 +242,10 @@ export default function MobileNav() {
                     onClick={() => setShowResearchHistory(!showResearchHistory)}
                     className="w-full flex items-center justify-between text-[11px] font-bold text-muted-foreground/80 py-1 px-2 hover:bg-accent/30 rounded transition-colors"
                   >
-                    <span>RESEARCH ({researchHistory.length})</span>
+                    <span className="flex items-center gap-1.5">
+                      <Atom className="w-3 h-3 text-purple-500 shrink-0" />
+                      RESEARCH ({researchHistory.length})
+                    </span>
                     {showResearchHistory ? <ChevronUp className="h-2.5 w-2.5" /> : <ChevronDown className="h-2.5 w-2.5" />}
                   </button>
 
@@ -249,11 +255,11 @@ export default function MobileNav() {
                         researchHistory.map((item) => (
                           <div
                             key={item.id}
-                            className="py-2 px-3 hover:bg-accent cursor-pointer transition-colors rounded-lg flex items-center gap-2 border border-transparent hover:border-border/20"
+                            className="py-2 px-3 hover:bg-accent cursor-pointer transition-colors rounded-lg flex items-center gap-2 border border-transparent hover:border-border/20 group"
                             onClick={() => handleNavigate(`/deep-research/${item.id}`)}
                           >
-                            <Atom className="w-3.5 h-3.5 text-primary shrink-0 animate-pulse" />
-                            <h3 className="font-medium text-xs text-foreground/90 truncate">{item.query}</h3>
+                            <Atom className="w-3.5 h-3.5 text-purple-500 shrink-0 group-hover:scale-110 transition-transform" />
+                            <h3 className="font-medium text-xs text-foreground/90 truncate group-hover:text-purple-500 transition-colors">{item.query}</h3>
                           </div>
                         ))
                       ) : (
@@ -269,7 +275,10 @@ export default function MobileNav() {
                     onClick={() => setShowSearchHistory(!showSearchHistory)}
                     className="w-full flex items-center justify-between text-[11px] font-bold text-muted-foreground/80 py-1 px-2 hover:bg-accent/30 rounded transition-colors"
                   >
-                    <span>SEARCHES ({libraryHistory.length})</span>
+                    <span className="flex items-center gap-1.5">
+                      <Search className="w-3 h-3 text-blue-500 shrink-0" />
+                      SEARCHES ({libraryHistory.length})
+                    </span>
                     {showSearchHistory ? <ChevronUp className="h-2.5 w-2.5" /> : <ChevronDown className="h-2.5 w-2.5" />}
                   </button>
 
@@ -279,11 +288,11 @@ export default function MobileNav() {
                         libraryHistory.map((item, index) => (
                           <div
                             key={index}
-                            className="py-2 px-3 hover:bg-accent cursor-pointer transition-colors rounded-lg flex items-center gap-2 border border-transparent hover:border-border/20"
+                            className="py-2 px-3 hover:bg-accent cursor-pointer transition-colors rounded-lg flex items-center gap-2 border border-transparent hover:border-border/20 group"
                             onClick={() => handleLibraryClick(item.libId)}
                           >
-                            <BookOpen className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                            <h3 className="font-medium text-xs text-foreground/90 truncate">{item.searchInput}</h3>
+                            <Search className="w-3.5 h-3.5 text-blue-500 shrink-0 group-hover:scale-110 transition-transform" />
+                            <h3 className="font-medium text-xs text-foreground/90 truncate group-hover:text-blue-500 transition-colors">{item.searchInput}</h3>
                           </div>
                         ))
                       ) : (

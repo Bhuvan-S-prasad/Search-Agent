@@ -100,8 +100,8 @@ function DisplaySummary({
   /* ── Markdown pre-processing: [1], [2,3] → <cite> ──────── */
 
   const processedContent = useMemo(() => {
-    // Regex matches either a code block (to be ignored) or a citation pattern
-    const regex = /(```[\s\S]*?```|`[^`\n]+`)|\[(\d+(?:\s*,\s*\d+)*)\]/g;
+    // Regex matches either a code block (to be ignored) or a citation pattern (supporting half/full-width brackets like [], 【】, and ［］)
+    const regex = /(```[\s\S]*?```|`[^`\n]+`)|[\[【［](\d+(?:\s*,\s*\d+)*)[\]】］]/g;
 
     return (aiResponce || "").replace(regex, (match, codeContent, numsRaw) => {
       // If it's a code block or inline code, return it untouched

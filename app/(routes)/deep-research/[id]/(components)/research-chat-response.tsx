@@ -46,9 +46,9 @@ export default function ResearchChatResponse({ chat }: ResearchChatResponseProps
 
             {chat.isStreaming && chat.response && (
                 <div className="flex items-center gap-1.5 mt-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" style={{ animationDelay: "0.15s" }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" style={{ animationDelay: "0.3s" }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-600 animate-pulse" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-600 animate-pulse" style={{ animationDelay: "0.15s" }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-600 animate-pulse" style={{ animationDelay: "0.3s" }} />
                 </div>
             )}
         </div>

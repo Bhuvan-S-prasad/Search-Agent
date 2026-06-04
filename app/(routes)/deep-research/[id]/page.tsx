@@ -312,8 +312,8 @@ function DeepResearchPage() {
             <div className="min-h-screen flex items-center justify-center pl-0 md:pl-20 px-4">
                 <div className="flex flex-col items-center gap-4">
                     <div className="relative">
-                        <div className="w-12 h-12 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
-                        <Atom className="w-5 h-5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary" />
+                        <div className="w-12 h-12 rounded-full border-2 border-purple-500/20 border-t-purple-500 animate-spin" />
+                        <Atom className="w-5 h-5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-purple-500" />
                     </div>
                     <p className="text-sm text-muted-foreground">Loading research session...</p>
                 </div>
@@ -345,7 +345,7 @@ function DeepResearchPage() {
                         <div className="hidden md:block shrink-0">
                             <UserButton />
                         </div>
-                        <div className="flex items-center gap-2 text-primary shrink-0 min-w-0">
+                        <div className="flex items-center gap-2 text-purple-600 shrink-0 min-w-0">
                             <Atom className="w-4 h-4 shrink-0" />
                             <span className="text-xs font-semibold uppercase tracking-wider hidden sm:inline">Deep Research</span>
                         </div>
@@ -376,7 +376,7 @@ function DeepResearchPage() {
                 <div className="max-w-4xl mx-auto px-4 md:px-10 py-8 pb-32 max-md:pt-4">
                     {/* Query Title */}
                     <div className="mb-8">
-                        <div className="flex items-center gap-2 text-primary mb-3">
+                        <div className="flex items-center gap-2 text-purple-600 mb-3">
                             <Atom className="w-5 h-5" />
                             <span className="text-sm font-medium uppercase tracking-wider">Deep Research</span>
                         </div>
@@ -459,7 +459,7 @@ function DeepResearchPage() {
                                 <div key={item.data.id} className="mt-8 border-t border-border pt-8">
                                     {/* Follow-up Query Title */}
                                     <div className="mb-8">
-                                        <div className="flex items-center gap-2 text-primary mb-3">
+                                        <div className="flex items-center gap-2 text-purple-600 mb-3">
                                             <Atom className="w-5 h-5" />
                                             <span className="text-sm font-medium uppercase tracking-wider">Follow-up Research</span>
                                         </div>
@@ -475,8 +475,8 @@ function DeepResearchPage() {
 
                                     {/* Loading state while session hasn't been fetched yet */}
                                     {!followUpSession && (
-                                        <div className="flex items-center gap-3 p-4 rounded-xl border border-border bg-primary/5">
-                                            <div className="w-5 h-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+                                        <div className="flex items-center gap-3 p-4 rounded-xl border border-border bg-purple-500/5">
+                                            <div className="w-5 h-5 rounded-full border-2 border-purple-500/20 border-t-purple-500 animate-spin" />
                                             <p className="text-sm text-muted-foreground">Starting research...</p>
                                         </div>
                                     )}
