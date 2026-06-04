@@ -26,11 +26,6 @@ const MenuOptions = [
     icon: Compass,
     path: "/discover",
   },
-  {
-    title: "SignIn",
-    icon: LogIn,
-    path: "/sign-in",
-  },
 ];
 
 interface LibraryItem {
