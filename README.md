@@ -34,7 +34,18 @@ An AI-powered web search assistant that finds sources, synthesizes answers with 
 
 ![architecture](https://ik.imagekit.io/wq68aygdr/NOMI-Architecture.png?updatedAt=1762786535179)
 
-## New & Notable Features
+## New Features
+
+- **Council of NOMI** (`app/(routes)/council/[id]/page.tsx`)
+  - A collaborative 3-stage LLM orchestration engine designed for complex debate, comparisons, analysis, and deliberation.
+  - **Stage 1 (Parallel Responses)**: Dispatches the user's prompt to four distinct LLM models running in parallel.
+  - **Stage 2 (Peer Review / Rankings)**: Models dynamically inspect and rank each other's responses to construct a peer review score matrix.
+  - **Stage 3 (Chairman Synthesis)**: A final synthesis agent weighs the peer rankings and arguments to formulate a comprehensive consensus verdict.
+  - Features real-time SSE progress tracking and a beautiful golden-amber visual design.
+
+- **Deep Research Agentic Workflows** (`app/(routes)/deep-research/[id]/page.tsx`)
+  - Performs multi-step agentic research by generating dynamic query paths, crawling sources, deduplicating search outcomes, and auto-indexing citation links.
+  - Provides detailed interactive progress timeline visualizations, source/citation indexing cards, follow-up query chat modules, and a beautiful premium purple styling.
 
 - **Discovery Page** (`app/(routes)/discover/page.tsx`)
   - Curated news via GNews API categories (For You, Finance, Technology, Sports, Entertainment, Politics) using `/api/gnews-api`.
