@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, useCallback, useRef } from "react";
 import axios from "axios";
 
@@ -11,7 +11,6 @@ import ResearchChatResponse from "./(components)/research-chat-response";
 import { UserButton } from "@clerk/nextjs";
 import { Atom, ShareIcon, ArrowLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type {
     DeepResearchSession,
