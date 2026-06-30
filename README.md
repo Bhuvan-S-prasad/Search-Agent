@@ -16,6 +16,20 @@ An AI-powered web search assistant that finds sources, synthesizes answers with 
 ![Clerk](https://img.shields.io/badge/Clerk-3b82f6?style=for-the-badge&logo=clerk&logoColor=white)
 ![Inngest](https://img.shields.io/badge/Inngest-111827?style=for-the-badge&logo=inngest&logoColor=white)
 
+## Platform Preview
+
+<div align="center">
+
+![Landing Page](https://ik.imagekit.io/wq68aygdr/projects/Screenshot%202026-06-30%20203347.png)
+
+_Landing Page_
+
+![Search View](https://ik.imagekit.io/wq68aygdr/projects/Screenshot%202026-06-30%20204413.png)
+
+_Search View_
+
+</div>
+
 ### Core Technologies
 
 - **Frontend**: Next.js 16, React, TypeScript, Tailwind, shadcn/ui
